@@ -1,0 +1,48 @@
+@use 'shared/_colors'as c;
+@use 'shared/_utils'as u;
+
+#server-observations-html.weather-display {
+	.header .title.single {
+		font-size: 20pt;
+	}
+}
+
+.weather-display .server-observations {
+	// Override the default has-scroll height to fit content properly
+	&.main {
+		height: auto !important;
+		min-height: 250px;
+	}
+
+	.container {
+		position: relative;
+		top: 15px;
+		box-sizing: border-box;
+		height: 250px;
+		overflow: hidden;
+	}
+
+	.server-output {
+		position: relative;
+		font-family: 'Star4000';
+		font-size: 20pt;
+		line-height: 32px;
+		color: #fff;
+		text-transform: uppercase;
+		text-align: center;
+		@include u.text-shadow();
+
+		.server-page {
+			height: 250px;
+			padding: 0 8px;
+			box-sizing: border-box;
+		}
+
+		.server-line {
+			white-space: normal;
+			overflow-wrap: anywhere;
+			word-break: break-word;
+			margin-bottom: 6px;
+		}
+	}
+}

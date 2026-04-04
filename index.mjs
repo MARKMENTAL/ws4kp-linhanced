@@ -2,6 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import fs from 'fs';
 import { readFile } from 'fs/promises';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import {
 	weatherProxy, radarProxy, outlookProxy, mesonetProxy, forecastProxy,
 } from './proxy/handlers.mjs';
@@ -9,6 +11,8 @@ import playlist from './src/playlist.mjs';
 import OVERRIDES from './src/overrides.mjs';
 import cache from './proxy/cache.mjs';
 import devTools from './src/com.chrome.devtools.mjs';
+
+const execAsync = promisify(exec);
 
 const travelCities = JSON.parse(await readFile('./datagenerators/output/travelcities.json'));
 const regionalCities = JSON.parse(await readFile('./datagenerators/output/regionalcities.json'));
@@ -117,6 +121,28 @@ const staticOptions = {
 // Weather.gov API proxy (catch-all for any Weather.gov API endpoint)
 // Skip setting up routes for the caching proxy server in static mode
 if (!process.env?.STATIC) {
+	// Server info endpoint for fastfetch output (must be before /api/ weather proxy)
+	app.get('/api/server-info', async (req, res) => {
+		try {
+			// Use --structure to show only essential info: OS, Kernel, Uptime, CPU, GPU, Memory, Disk
+			const { stdout } = await execAsync('fastfetch --structure "Title:OS:Kernel:Uptime:CPU:GPU:Memory:Disk" --pipe false');
+			// Strip all ANSI escape sequences (color codes, cursor positioning, etc.)
+			// eslint-disable-next-line no-control-regex
+			const cleanOutput = stdout.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+			res.json({
+				success: true,
+				data: cleanOutput,
+			});
+		} catch (error) {
+			// fastfetch not available or other error
+			res.json({
+				success: false,
+				data: null,
+				error: error.message,
+			});
+		}
+	});
+
 	app.use('/api/', weatherProxy);
 
 	// Cache management DELETE endpoint to allow "uncaching" specific URLs

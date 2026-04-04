@@ -130,7 +130,7 @@ const getWeather = async (latLon, haveDataCallback) => {
 		}
 
 		// call for new data on each display
-		displays.forEach((display) => display.getData(weatherParameters));
+		displays.forEach((display) => display?.getData(weatherParameters));
 	} catch (error) {
 		console.error(`Failed to get weather data: ${error.message}`);
 	}
@@ -172,12 +172,12 @@ const updateStatus = (value) => {
 // the weather.gov api has long load times for some products when you are the first
 // requester for the product after the cache expires
 const countLoadedDisplays = () => displays.reduce((acc, display) => {
-	if (display.status !== STATUS.loading) return acc + 1;
+	if (display?.status !== STATUS.loading) return acc + 1;
 	return acc;
 }, 0);
 
 const hideAllCanvases = () => {
-	displays.forEach((display) => display.hideCanvas());
+	displays.forEach((display) => display?.hideCanvas());
 };
 
 // is playing interface
@@ -250,7 +250,7 @@ const loadDisplay = (direction) => {
 	for (let i = 0; i < totalDisplays; i += 1) {
 		// convert form simple 0-10 to start at current display index +/-1 and wrap
 		idx = wrap(curIdx + (i + 1) * direction, totalDisplays);
-		if (displays[idx].status === STATUS.loaded && displays[idx].timing.totalScreens > 0) {
+		if (displays[idx]?.status === STATUS.loaded && displays[idx]?.timing.totalScreens > 0) {
 			// Prevent infinite recursion by ensuring we don't select the same display
 			if (idx !== curIdx) {
 				foundSuitableDisplay = true;
@@ -272,6 +272,10 @@ const loadDisplay = (direction) => {
 	}
 
 	const newDisplay = displays[idx];
+	if (!newDisplay) {
+		console.warn('Selected display is undefined, aborting navigation');
+		return;
+	}
 	// hide all displays
 	hideAllCanvases();
 	// show the new display and navigate to an appropriate display
@@ -280,7 +284,7 @@ const loadDisplay = (direction) => {
 };
 
 // get the current display index or value
-const currentDisplayIndex = () => displays.findIndex((display) => display.active);
+const currentDisplayIndex = () => displays.findIndex((display) => display?.active);
 const currentDisplay = () => displays[currentDisplayIndex()];
 
 const setPlaying = (newValue) => {
@@ -586,7 +590,7 @@ const resize = (force = false) => {
 
 // reset all statuses to loading on all displays, used to keep the progress bar accurate during refresh
 const resetStatuses = () => {
-	displays.forEach((display) => { display.status = STATUS.loading; });
+	displays.forEach((display) => { if (display) display.status = STATUS.loading; });
 };
 
 // Apply scanline scaling to try and prevent banding by avoiding fractional scaling
@@ -761,7 +765,7 @@ const generateCheckboxes = () => {
 
 	if (!availableDisplays) return;
 	// generate checkboxes
-	const checkboxes = displays.map((d) => d.generateCheckbox(d.defaultEnabled)).filter((d) => d);
+	const checkboxes = displays.map((d) => d?.generateCheckbox(d?.defaultEnabled)).filter((d) => d);
 
 	// write to page
 	availableDisplays.innerHTML = '';

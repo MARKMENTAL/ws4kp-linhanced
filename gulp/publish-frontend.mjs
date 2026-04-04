@@ -102,7 +102,8 @@ const buildCss = () => src(cssSources)
 	.pipe(sass({ style: 'compressed' }).on('error', sass.logError))
 	.pipe(rename({ suffix: '.min' }))
 	.pipe(sourceMaps.write('./'))
-	.pipe(dest(RESOURCES_PATH));
+	.pipe(dest(RESOURCES_PATH))
+	.pipe(dest('./server/styles'));
 
 const htmlSources = [
 	'views/*.ejs',
