@@ -1,130 +1,243 @@
-/* REGULAR SCANLINES SETTINGS */
+/* =========================================================
+   REGULAR SCANLINES SETTINGS
+   ========================================================= */
 
-// width of 1 scanline (responsive units to prevent banding)
 $scan-width: 1px;
-$scan-width-scaled: 0.15vh; // viewport-relative unit for better scaling
-
-// emulates a damage-your-eyes bad pre-2000 CRT screen ♥ (true, false)
 $scan-crt: false;
-
-// frames-per-second (should be > 1), only applies if $scan-crt: true;
 $scan-fps: 20;
-
-// scanline-color (rgba)
-$scan-color: rgba(#000, .3);
-
-// set z-index on 8, like in ♥ 8-bits ♥, or…
-// set z-index on 2147483648 or more to enable scanlines on Chrome fullscreen (doesn't work in Firefox or IE);
+$scan-color: rgba(#000, 0.30);
 $scan-z-index: 2147483648;
 
-/* MOVING SCANLINE SETTINGS */
-
-// moving scanline (true, false)
 $scan-moving-line: true;
+$scan-opacity: 0.75;
 
-// opacity of the moving scanline
-$scan-opacity: .75;
+/* =========================================================
+   CRT / S-VIDEO EFFECT SETTINGS
+   ========================================================= */
 
-/* MIXINS */
+// whole-screen softness
+$crt-soft-blur: 0.45px;
 
-// apply CRT animation: @include scan-crt($scan-crt);
-@mixin scan-crt($scan-crt) {
-	@if $scan-crt==true {
-		animation: scanlines 1s steps($scan-fps) infinite;
-	}
+// mild brightening / contrast to keep blur from looking muddy
+$crt-contrast: 1.04;
+$crt-saturation: 1.08;
+$crt-brightness: 0.98;
 
-	@else {
-		animation: none;
-	}
+// fake horizontal chroma bleed
+$crt-r-shift: -0.7px;
+$crt-b-shift: 0.7px;
+$crt-bleed-blur: 1.2px;
+$crt-rgb-opacity: 0.04;
+
+// subtle tube edge darkening
+$crt-vignette-opacity: 0.16;
+
+// optional tiny bloom
+$crt-glow-opacity: 0.05;
+
+/* =========================================================
+   MIXINS
+   ========================================================= */
+
+@mixin scan-crt($enabled) {
+  @if $enabled == true {
+    animation: scanlines 1s steps($scan-fps) infinite;
+  } @else {
+    animation: none;
+  }
 }
 
-// apply CRT animation: @include scan-crt($scan-crt);
-@mixin scan-moving($scan-moving-line) {
-	@if $scan-moving-line==true {
-		animation: scanline 6s linear infinite;
-	}
-
-	@else {
-		animation: none;
-	}
+@mixin scan-moving($enabled) {
+  @if $enabled == true {
+    animation: scanline 6s linear infinite;
+  } @else {
+    animation: none;
+  }
 }
 
-/* CSS .scanlines CLASS */
+/* =========================================================
+   APPLY TO THE REAL APP CONTAINER
+   ========================================================= */
+
+/*
+  You can add class="scanlines" to #divTwcMain or #container.
+  Example:
+  <div id="divTwcMain" class="scanlines">
+*/
 
 .scanlines {
-	position: relative;
-	overflow: hidden; // only to animate the unique scanline
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
 
-	&:before,
-	&:after {
-		display: block;
-		pointer-events: none;
-		content: '';
-		position: absolute;
-	}
+  /*
+    This is the actual rendered weather area in your HTML.
+    Applying the softness here affects the maps/text/icons themselves.
+  */
+  #container {
+    position: relative;
+    z-index: 1;
+    transform: translateZ(0);
+    will-change: filter;
 
-	// unique scanline travelling on the screen
-	&:before {
-		// position: absolute;
-		// bottom: 100%;
-		width: 100%;
-		height: $scan-width * 1;
-		z-index: $scan-z-index + 1;
-		background: $scan-color;
-		opacity: $scan-opacity;
-		// animation: scanline 6s linear infinite;
-		@include scan-moving($scan-moving-line);
-	}
+    filter:
+      blur($crt-soft-blur)
+      saturate($crt-saturation)
+      contrast($crt-contrast)
+      brightness($crt-brightness);
+  }
 
-	// the scanlines, so! - with responsive scaling for low-res displays
-	&:after {
-		top: 0;
-		right: 0;
-		bottom: 0;
-		left: 0;
-		z-index: $scan-z-index;
-		// repeating-linear-gradient is more efficient than linear-gradient+background-size because it doesn't require the browser to calculate tiling
-		background: repeating-linear-gradient(to bottom,
-				transparent 0,
-				transparent $scan-width,
-				$scan-color $scan-width,
-				$scan-color calc($scan-width * 2));
-		@include scan-crt($scan-crt);
+  /*
+    Red fringe overlay
+  */
+  #container::before,
+  #container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
 
-		// Prevent sub-pixel aliasing on scaled displays
-		image-rendering: crisp-edges;
-		image-rendering: pixelated;
-	}
+  #container::before {
+    background:
+      linear-gradient(
+        to right,
+        rgba(255, 0, 0, $crt-rgb-opacity) 0%,
+        rgba(255, 0, 0, 0.01) 15%,
+        rgba(255, 0, 0, 0.00) 50%,
+        rgba(255, 0, 0, 0.01) 85%,
+        rgba(255, 0, 0, $crt-rgb-opacity) 100%
+      );
+    transform: translateX($crt-r-shift);
+    filter: blur($crt-bleed-blur);
+    mix-blend-mode: screen;
+  }
 
-	// Scanlines use dynamic thickness calculated by JavaScript
-	// JavaScript calculates optimal thickness to prevent banding at any scale factor
-	// The --scanline-thickness custom property is set by applyScanlineScaling()
-	// The modes (hairline, thin, medium, thick) force the base thickness selection
-	// Some modes may appear the same (e.g. hairline and thin) depending on the display
-	&:before {
-		height: var(--scanline-thickness, $scan-width);
-	}
+  /*
+    Blue fringe overlay
+  */
+  #container::after {
+    background:
+      linear-gradient(
+        to right,
+        rgba(0, 140, 255, $crt-rgb-opacity) 0%,
+        rgba(0, 140, 255, 0.01) 15%,
+        rgba(0, 140, 255, 0.00) 50%,
+        rgba(0, 140, 255, 0.01) 85%,
+        rgba(0, 140, 255, $crt-rgb-opacity) 100%
+      );
+    transform: translateX($crt-b-shift);
+    filter: blur($crt-bleed-blur);
+    mix-blend-mode: screen;
+  }
 
-	&:after {
-		background: repeating-linear-gradient(to bottom,
-				transparent 0,
-				transparent var(--scanline-thickness, $scan-width),
-				$scan-color var(--scanline-thickness, $scan-width),
-				$scan-color calc(var(--scanline-thickness, $scan-width) * 2));
-	}
+  /*
+    Moving scanline
+  */
+  &:before,
+  &:after {
+    display: block;
+    pointer-events: none;
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+  }
+
+  &:before {
+    height: var(--scanline-thickness, $scan-width);
+    z-index: $scan-z-index + 2;
+    background: $scan-color;
+    opacity: $scan-opacity;
+    @include scan-moving($scan-moving-line);
+  }
+
+  /*
+    Regular scanline mask
+  */
+  &:after {
+    top: 0;
+    bottom: 0;
+    z-index: $scan-z-index;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent var(--scanline-thickness, $scan-width),
+      $scan-color var(--scanline-thickness, $scan-width),
+      $scan-color calc(var(--scanline-thickness, $scan-width) * 2)
+    );
+    @include scan-crt($scan-crt);
+  }
+
+  /*
+    Vignette layer
+    Added as an inset shadow so you don't need extra HTML
+  */
+  box-shadow:
+    inset 0 0 80px rgba(0, 0, 0, $crt-vignette-opacity),
+    inset 0 0 18px rgba(255, 255, 255, $crt-glow-opacity);
 }
 
-/* ANIMATE UNIQUE SCANLINE */
+/* =========================================================
+   OPTIONAL: only affect active weather panels, not menus
+   ========================================================= */
+
+/*
+  If the controls / bottom nav get too blurry, move the blur
+  from #container to the weather slides only:
+*/
+.scanlines.crt-panels-only {
+  #container {
+    filter: none;
+  }
+
+  .weather-display {
+    filter:
+      blur($crt-soft-blur)
+      saturate($crt-saturation)
+      contrast($crt-contrast)
+      brightness($crt-brightness);
+
+    transform: translateZ(0);
+  }
+}
+
+/* =========================================================
+   OPTIONAL: make text slightly glow like old TV phosphors
+   ========================================================= */
+
+.scanlines {
+  .header,
+  .main,
+  .scroll,
+  .date-time,
+  .city,
+  .temp,
+  .condition,
+  .location,
+  .label,
+  .value,
+  .title {
+    text-shadow:
+      0 0 1px rgba(255, 255, 255, 0.18),
+      0 0 2px rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+
 @keyframes scanline {
-	0% {
-		transform: translate3d(0, 200000%, 0);
-		// bottom: 0%; // to have a continuous scanline move, use this line (here in 0% step) instead of transform and write, in &:before, { position: absolute; bottom: 100%; }
-	}
+  0% {
+    transform: translate3d(0, 200000%, 0);
+  }
 }
 
 @keyframes scanlines {
-	0% {
-		background-position: 0 50%;
-		// bottom: 0%; // to have a continuous scanline move, use this line (here in 0% step) instead of transform and write, in &:before, { position: absolute; bottom: 100%; }
-	}
+  0% {
+    background-position: 0 50%;
+  }
 }
+
