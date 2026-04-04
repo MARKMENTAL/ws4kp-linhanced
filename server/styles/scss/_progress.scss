@@ -4,7 +4,7 @@
 .weather-display .progress {
 	@include u.text-shadow();
 	font-family: 'Star4000 Extended';
-	font-size: 19pt;
+	font-size: 18pt;
 
 	.container {
 		position: relative;
@@ -13,7 +13,7 @@
 		box-sizing: border-box;
 		height: 310px;
 		overflow: hidden;
-		line-height: 28px;
+		line-height: 26px;
 
 		.item {
 			position: relative;

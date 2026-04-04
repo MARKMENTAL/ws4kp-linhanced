@@ -11,9 +11,6 @@ const PAGE_DURATION_MS = 7000;
 class ServerObservations extends WeatherDisplay {
 	constructor(navId, elemId) {
 		super(navId, elemId, 'Server Observations', true);
-
-		// Don't show on progress screen
-		this.showOnProgress = false;
 		this.timing.baseDelay = PAGE_DURATION_MS;
 	}
 
