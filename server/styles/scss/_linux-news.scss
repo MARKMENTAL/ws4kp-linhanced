@@ -1,0 +1,54 @@
+@use 'shared/_utils' as u;
+
+.weather-display .linux-news {
+	&.main {
+		height: auto !important;
+		min-height: 250px;
+	}
+
+	.container {
+		position: relative;
+		top: 15px;
+		margin: 0px 10px;
+		box-sizing: border-box;
+		height: 250px;
+		overflow: hidden;
+	}
+
+	.news-output {
+		position: relative;
+
+		.news-page {
+			height: 250px;
+			box-sizing: border-box;
+			padding: 0 8px;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+		}
+
+		.story {
+			height: 116px;
+			overflow: hidden;
+		}
+
+		.headline {
+			font-family: 'Star4000';
+			font-size: 17pt;
+			line-height: 22px;
+			color: #ff0;
+			text-transform: uppercase;
+			@include u.text-shadow();
+			margin-bottom: 4px;
+		}
+
+		.blurb {
+			font-family: 'Star4000';
+			font-size: 14pt;
+			line-height: 16px;
+			color: #fff;
+			@include u.text-shadow();
+			overflow: hidden;
+		}
+	}
+}

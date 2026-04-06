@@ -87,6 +87,8 @@ const mjsSources = [
 	'server/scripts/modules/progress.mjs',
 	'server/scripts/modules/media.mjs',
 	'server/scripts/modules/custom-scroll-text.mjs',
+	'server/scripts/modules/serverobservations.mjs',
+	'server/scripts/modules/linuxnews.mjs',
 	'server/scripts/index.mjs',
 ];
 

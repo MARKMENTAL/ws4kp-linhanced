@@ -64,6 +64,7 @@
   <script type="module" src="scripts/modules/media.mjs"></script>
   <script type="module" src="scripts/modules/custom-scroll-text.mjs"></script>
   <script type="module" src="scripts/modules/serverobservations.mjs"></script>
+  <script type="module" src="scripts/modules/linuxnews.mjs"></script>
   <script type="module" src="scripts/index.mjs"></script>
   <% } %>
 
@@ -136,6 +137,9 @@
         </div>
         <div id="server-observations-html" class="weather-display">
           <%- include('partials/server-observations.ejs') %>
+        </div>
+        <div id="linux-news-html" class="weather-display">
+          <%- include('partials/linux-news.ejs') %>
         </div>
         <%- include('partials/scroll.ejs') %>
       </div>

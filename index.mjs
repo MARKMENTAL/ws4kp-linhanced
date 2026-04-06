@@ -14,6 +14,70 @@ import devTools from './src/com.chrome.devtools.mjs';
 
 const execAsync = promisify(exec);
 
+const decodeHtml = (text) => text
+	.replace(/&nbsp;/g, ' ')
+	.replace(/&amp;/g, '&')
+	.replace(/&quot;/g, '"')
+	.replace(/&#39;/g, "'")
+	.replace(/&rsquo;/g, "'")
+	.replace(/&lsquo;/g, "'")
+	.replace(/&ldquo;/g, '"')
+	.replace(/&rdquo;/g, '"')
+	.replace(/&mdash;/g, '-')
+	.replace(/&ndash;/g, '-')
+	.replace(/&hellip;/g, '...')
+	.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+
+const stripHtml = (text) => decodeHtml(text
+	.replace(/<script[\s\S]*?<\/script>/gi, '')
+	.replace(/<style[\s\S]*?<\/style>/gi, '')
+	.replace(/<[^>]+>/g, ' ')
+	.replace(/\s+([,.;:!?])/g, '$1')
+	.replace(/\s+/g, ' ')
+	.trim());
+
+const trimBlurb = (text, maxLength = 120) => {
+	if (text.length <= maxLength) return text;
+	const shortened = text.slice(0, maxLength);
+	const lastSpace = shortened.lastIndexOf(' ');
+	return `${shortened.slice(0, lastSpace > 0 ? lastSpace : maxLength)}...`;
+};
+
+const parseLwnStories = (html) => {
+	const headingRegex = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+	const headings = [...html.matchAll(headingRegex)];
+	const stories = [];
+
+	headings.forEach((match, index) => {
+		if (stories.length >= 8) return;
+
+		const headingHtml = match[1];
+		const start = match.index + match[0].length;
+		const end = headings[index + 1]?.index ?? html.length;
+		const sectionHtml = html.slice(start, end);
+
+		const headline = stripHtml(headingHtml).replace(/^\[\s*\$\s*\]\s*/, '');
+		if (!headline || headline === 'Welcome to LWN.net') return;
+
+		const hrefMatch = headingHtml.match(/href="([^"]+)"/i)
+			?? sectionHtml.match(/href="(\/Articles\/[^"#]+)"/i);
+		const paragraphMatches = [...sectionHtml.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
+		const blurb = paragraphMatches
+			.map((paragraph) => stripHtml(paragraph[1]))
+			.find((paragraph) => paragraph && !paragraph.startsWith('Posted ') && !paragraph.startsWith('Read more'));
+
+		if (!blurb) return;
+
+		stories.push({
+			headline,
+			blurb: trimBlurb(blurb),
+			url: hrefMatch ? new URL(hrefMatch[1], 'https://lwn.net/').toString() : 'https://lwn.net/',
+		});
+	});
+
+	return stories;
+};
+
 const travelCities = JSON.parse(await readFile('./datagenerators/output/travelcities.json'));
 const regionalCities = JSON.parse(await readFile('./datagenerators/output/regionalcities.json'));
 const stationInfo = JSON.parse(await readFile('./datagenerators/output/stations.json'));
@@ -138,6 +202,38 @@ if (!process.env?.STATIC) {
 			res.json({
 				success: false,
 				data: null,
+				error: error.message,
+			});
+		}
+	});
+
+	app.get('/api/linux-news', async (req, res) => {
+		try {
+			const response = await fetch('https://lwn.net/', {
+				headers: {
+					'User-Agent': `ws4kp/${version}`,
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error(`LWN request failed with status ${response.status}`);
+			}
+
+			const html = await response.text();
+			const stories = parseLwnStories(html);
+
+			if (stories.length === 0) {
+				throw new Error('No LWN stories found');
+			}
+
+			res.json({
+				success: true,
+				stories,
+			});
+		} catch (error) {
+			res.json({
+				success: false,
+				stories: [],
 				error: error.message,
 			});
 		}
