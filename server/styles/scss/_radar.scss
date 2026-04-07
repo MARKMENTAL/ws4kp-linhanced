@@ -136,6 +136,11 @@
 			font-family: inherit;
 		}
 
+		.radar-base-layer,
+		.radar-base-layer .leaflet-tile {
+			filter: grayscale(0.75) brightness(0.52) contrast(1.15) saturate(0.45);
+		}
+
 		.leaflet-control-container,
 		.leaflet-control-attribution,
 		.leaflet-control-zoom {

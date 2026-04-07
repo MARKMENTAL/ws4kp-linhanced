@@ -94,6 +94,7 @@ class Radar extends WeatherDisplay {
 			maxZoom: 10,
 			minZoom: 1,
 			crossOrigin: true,
+			className: 'radar-base-layer',
 		});
 
 		this.baseLayer.addTo(this.map);
@@ -127,6 +128,7 @@ class Radar extends WeatherDisplay {
 			crossOrigin: true,
 			updateWhenIdle: false,
 			keepBuffer: 2,
+			className: 'radar-precip-layer',
 		});
 
 		layer.addTo(this.map);
