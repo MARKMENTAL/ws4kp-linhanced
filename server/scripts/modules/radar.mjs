@@ -11,9 +11,37 @@ import {
 	clearMarkers,
 } from './utils/leaflet-weather-map.mjs';
 
-class Radar extends WeatherDisplay {
-	static metadataUrl = 'https://api.rainviewer.com/public/weather-maps.json';
+const RADAR_METADATA_URL = 'https://api.rainviewer.com/public/weather-maps.json';
+const RADAR_METADATA_CACHE_TTL_MS = 2 * 60 * 1000;
+let radarMetadataCache = null;
 
+const getRadarMetadataCached = async (stillWaiting) => {
+	const now = Date.now();
+	if (radarMetadataCache && (now - radarMetadataCache.fetchedAt) < RADAR_METADATA_CACHE_TTL_MS) {
+		return radarMetadataCache.data;
+	}
+
+	const radarMetadata = await safeJson(RADAR_METADATA_URL, {
+		retryCount: 2,
+		stillWaiting,
+	});
+
+	if (radarMetadata?.host && radarMetadata?.radar?.past?.length) {
+		radarMetadataCache = {
+			data: radarMetadata,
+			fetchedAt: now,
+		};
+		return radarMetadata;
+	}
+
+	if (radarMetadataCache) {
+		return radarMetadataCache.data;
+	}
+
+	return null;
+};
+
+class Radar extends WeatherDisplay {
 	constructor(navId, elemId) {
 		super(navId, elemId, 'Local Radar');
 
@@ -48,10 +76,7 @@ class Radar extends WeatherDisplay {
 			this.updateLocationMarker();
 			await this.updateNearbyMarkers();
 
-			const radarMetadata = await safeJson(Radar.metadataUrl, {
-				retryCount: 2,
-				stillWaiting: () => this.stillWaiting(),
-			});
+			const radarMetadata = await getRadarMetadataCached(() => this.stillWaiting());
 
 			const frames = radarMetadata?.radar?.past?.slice(-this.maxFrames) ?? [];
 			if (!frames.length || !radarMetadata?.host) {

@@ -15,6 +15,9 @@ const OPEN_METEO_RADAR_OBSERVATION_PARAMETERS = [
 	'models=best_match',
 ].join('&');
 
+const OPEN_METEO_OBSERVATION_CACHE_TTL_MS = 10 * 60 * 1000;
+const openMeteoObservationCache = new Map();
+
 const getPoint = async (lat, lon) => {
 	const point = await safeJson(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
 	if (!point) {
@@ -56,15 +59,24 @@ const getAggregatedOpenMeteoForecast = async (lat, lon) => {
 };
 
 const getOpenMeteoObservationSnapshot = async (lat, lon) => {
+	const cacheKey = `${lat.toFixed(4)},${lon.toFixed(4)}`;
+	const cachedEntry = openMeteoObservationCache.get(cacheKey);
+	const now = Date.now();
+	if (cachedEntry && (now - cachedEntry.fetchedAt) < OPEN_METEO_OBSERVATION_CACHE_TTL_MS) {
+		return cachedEntry.data;
+	}
+
 	const forecast = await safeJson(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&${OPEN_METEO_RADAR_OBSERVATION_PARAMETERS}`);
 	if (!forecast?.hourly?.time?.length) {
 		if (debugFlag('verbose-failures')) {
 			console.warn(`Unable to get Open-Meteo radar observation snapshot for ${lat},${lon}`);
 		}
+		if (cachedEntry) {
+			return cachedEntry.data;
+		}
 		return false;
 	}
 
-	const now = Date.now();
 	let nearestIndex = 0;
 	let nearestDelta = Number.POSITIVE_INFINITY;
 
@@ -76,13 +88,20 @@ const getOpenMeteoObservationSnapshot = async (lat, lon) => {
 		}
 	});
 
-	return {
+	const snapshot = {
 		time: forecast.hourly.time[nearestIndex],
 		temperature: forecast.hourly.temperature_2m?.[nearestIndex] ?? null,
 		weatherCode: forecast.hourly.weather_code?.[nearestIndex] ?? 0,
 		isDay: Boolean(forecast.hourly.is_day?.[nearestIndex] ?? 1),
 		timezone: forecast.timezone,
 	};
+
+	openMeteoObservationCache.set(cacheKey, {
+		data: snapshot,
+		fetchedAt: now,
+	});
+
+	return snapshot;
 };
 
 const weatherConditions = [
