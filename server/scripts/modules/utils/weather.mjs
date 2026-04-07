@@ -30,6 +30,24 @@ const getOpenMeteoForecast = async (lat, lon) => {
 	return forecast;
 };
 
+const getAggregatedOpenMeteoForecast = async (lat, lon) => {
+	const forecast = await getOpenMeteoForecast(lat, lon);
+	if (!forecast) return false;
+
+	const aggregatedForecast = aggregateWeatherForecastData(forecast);
+	if (!aggregatedForecast) {
+		if (debugFlag('verbose-failures')) {
+			console.warn(`Unable to aggregate Open-Meteo forecast for ${lat},${lon}`);
+		}
+		return false;
+	}
+
+	return {
+		forecast,
+		aggregatedForecast,
+	};
+};
+
 const weatherConditions = [
 	{ codes: [0], text: ['Clear sky'] },
 	{ codes: [1, 2, 3], text: ['Mainly clear', 'Partly cloudy', 'Overcast'] },
@@ -124,6 +142,7 @@ const aggregateWeatherForecastData = (forecastResponse) => {
 export {
 	getPoint,
 	getOpenMeteoForecast,
+	getAggregatedOpenMeteoForecast,
 	aggregateWeatherForecastData,
 	getConditionText,
 };

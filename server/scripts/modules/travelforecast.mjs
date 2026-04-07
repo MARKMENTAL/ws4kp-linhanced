@@ -1,13 +1,14 @@
 // travel forecast display
 import STATUS from './status.mjs';
-import { safeJson, safePromiseAll } from './utils/fetch.mjs';
-import { getSmallIcon } from './icons.mjs';
+import { safePromiseAll } from './utils/fetch.mjs';
+import { getSmallIconFromWmoCode } from './icons.mjs';
 import { DateTime } from '../vendor/auto/luxon.mjs';
 import WeatherDisplay from './weatherdisplay.mjs';
 import { registerDisplay } from './navigation.mjs';
-import settings from './settings.mjs';
 import calculateScrollTiming from './utils/scroll-timing.mjs';
 import { debugFlag } from './utils/debug.mjs';
+import { temperature } from './utils/units.mjs';
+import { getAggregatedOpenMeteoForecast } from './utils/weather.mjs';
 
 class TravelForecast extends WeatherDisplay {
 	constructor(navId, elemId, defaultActive) {
@@ -34,28 +35,18 @@ class TravelForecast extends WeatherDisplay {
 	async getData(weatherParameters, refresh) {
 		// super checks for enabled
 		if (!super.getData(weatherParameters, refresh)) return;
-		if (!this.weatherParameters?.supportsNoaaDisplays) {
-			this.data = [];
-			this.timing.totalScreens = 0;
-			this.setStatus(STATUS.loaded);
-			return;
-		}
 
 		// clear stored data if not refresh
 		if (!refresh) {
 			this.previousData = [];
 		}
 
+		const temperatureConverter = temperature();
+
 		const forecastPromises = TravelCities.map(async (city, index) => {
 			try {
-				// get point then forecast
-				if (!city.point) throw new Error('No pre-loaded point');
 				let forecast;
-				forecast = await safeJson(`https://api.weather.gov/gridpoints/${city.point.wfo}/${city.point.x},${city.point.y}/forecast`, {
-					data: {
-						units: settings.units.value,
-					},
-				});
+				forecast = await getAggregatedOpenMeteoForecast(city.Latitude, city.Longitude);
 
 				if (forecast) {
 					// store for the next run
@@ -73,15 +64,23 @@ class TravelForecast extends WeatherDisplay {
 					}
 					return { name: city.Name, error: true };
 				}
-				// determine today or tomorrow (shift periods by 1 if tomorrow)
-				const todayShift = forecast.properties.periods[0].isDaytime ? 0 : 1;
+
+				const [todayKey, tomorrowKey] = Object.keys(forecast.aggregatedForecast);
+				const todayForecast = forecast.aggregatedForecast[todayKey];
+				const tomorrowForecast = forecast.aggregatedForecast[tomorrowKey] ?? todayForecast;
+				if (!todayForecast) {
+					throw new Error('No aggregated travel forecast available');
+				}
+
+				const firstHour = todayForecast.hours[0] ?? {};
+				const today = Boolean(firstHour.is_day ?? 1);
 				// return a pared-down forecast
 				return {
-					today: todayShift === 0,
-					high: forecast.properties.periods[todayShift].temperature,
-					low: forecast.properties.periods[todayShift + 1].temperature,
+					today,
+					high: temperatureConverter(todayForecast.temperature_2m_max),
+					low: temperatureConverter(tomorrowForecast.temperature_2m_min),
 					name: city.Name,
-					icon: getSmallIcon(forecast.properties.periods[todayShift].icon),
+					icon: getSmallIconFromWmoCode(todayForecast.weather_code, today),
 				};
 			} catch (error) {
 				console.error(`Unexpected error getting Travel Forecast for ${city.Name}: ${error.message}`);
