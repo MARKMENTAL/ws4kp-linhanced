@@ -5,7 +5,7 @@ import { readFile } from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import {
-	weatherProxy, radarProxy, outlookProxy, mesonetProxy, forecastProxy,
+	weatherProxy, radarProxy, outlookProxy, mesonetProxy, forecastProxy, openMeteoProxy,
 } from './proxy/handlers.mjs';
 import playlist from './src/playlist.mjs';
 import OVERRIDES from './src/overrides.mjs';
@@ -253,6 +253,7 @@ if (!process.env?.STATIC) {
 	app.use('/spc/', outlookProxy);
 	app.use('/mesonet/', mesonetProxy);
 	app.use('/forecast/', forecastProxy);
+	app.use('/open-meteo/', openMeteoProxy);
 
 	// Playlist route is available in server mode (not in static mode)
 	app.get('/playlist.json', playlist);

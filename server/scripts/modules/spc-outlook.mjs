@@ -59,6 +59,12 @@ class SpcOutlook extends WeatherDisplay {
 	async getData(weatherParameters, refresh) {
 		if (weatherParameters) this.weatherParameters = weatherParameters;
 		if (!super.getData(weatherParameters, refresh)) return;
+		if (!this.weatherParameters?.supportsNoaaDisplays) {
+			this.data = [];
+			this.timing.totalScreens = 0;
+			this.setStatus(STATUS.loaded);
+			return;
+		}
 
 		// SPC outlook data does not need to be reloaded on a location change, only during silent refresh
 		if (!this.rawOutlookData || refresh) {

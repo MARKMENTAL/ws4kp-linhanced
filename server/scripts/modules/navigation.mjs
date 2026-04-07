@@ -3,7 +3,7 @@ import noSleep from './utils/nosleep.mjs';
 import STATUS from './status.mjs';
 import { wrap } from './utils/calc.mjs';
 import { safeJson } from './utils/fetch.mjs';
-import { getPoint } from './utils/weather.mjs';
+import { getPoint, getOpenMeteoForecast, aggregateWeatherForecastData } from './utils/weather.mjs';
 import { debugFlag } from './utils/debug.mjs';
 import settings from './settings.mjs';
 
@@ -15,6 +15,30 @@ const displays = [];
 let playing = false;
 let progress;
 const weatherParameters = {};
+const LOCATION_STORAGE_KEY = 'latLonLocation';
+
+const getStoredLocationMetadata = () => {
+	try {
+		const raw = localStorage.getItem(LOCATION_STORAGE_KEY);
+		return raw ? JSON.parse(raw) : null;
+	} catch {
+		return null;
+	}
+};
+
+const isUsLocation = (location) => ['US', 'USA'].includes((location?.countryCode ?? '').toUpperCase());
+
+const getFallbackLocation = (latLon) => {
+	const query = localStorage.getItem('latLonQuery') ?? `${latLon.lat.toFixed(4)}, ${latLon.lon.toFixed(4)}`;
+	const [city = query, state = ''] = query.split(',').map((part) => part.trim());
+	return {
+		city,
+		state,
+		country: '',
+		countryCode: '',
+		label: query,
+	};
+};
 
 const init = async () => {
 	// set up the resize handler with debounce logic to prevent rapid-fire calls
@@ -60,38 +84,33 @@ const message = (data) => {
 };
 
 const getWeather = async (latLon, haveDataCallback) => {
-	// get initial weather data
-	const point = await getPoint(latLon.lat, latLon.lon);
+	const location = getStoredLocationMetadata() ?? getFallbackLocation(latLon);
+	const openMeteoForecast = await getOpenMeteoForecast(latLon.lat, latLon.lon);
+	if (!openMeteoForecast) return;
 
-	// check if point data was successfully retrieved
-	if (!point) {
-		return;
-	}
+	const aggregatedForecast = aggregateWeatherForecastData(openMeteoForecast);
+	if (!aggregatedForecast) return;
 
-	if (typeof haveDataCallback === 'function') haveDataCallback(point);
+	if (typeof haveDataCallback === 'function') haveDataCallback(location);
 
 	try {
-		// get stations using centralized safe handling
-		const stations = await safeJson(point.properties.observationStations);
+		const supportsNoaaDisplays = isUsLocation(location);
+		let point = null;
+		let stations = null;
+		let stationId = '';
 
-		if (!stations) {
-			console.warn('Failed to get Observation Stations');
-			return;
+		if (supportsNoaaDisplays) {
+			point = await getPoint(latLon.lat, latLon.lon);
+			if (point?.properties?.observationStations) {
+				stations = await safeJson(point.properties.observationStations);
+				stationId = stations?.features?.[0]?.properties?.stationIdentifier ?? '';
+			}
 		}
 
-		// check if stations data is valid
-		if (!stations || !stations.features || stations.features.length === 0) {
-			console.warn('No Observation Stations found for this location');
-			return;
-		}
-
-		const StationId = stations.features[0].properties.stationIdentifier;
-
-		let { city } = point.properties.relativeLocation.properties;
-		const { state } = point.properties.relativeLocation.properties;
-
-		if (StationId in StationInfo) {
-			city = StationInfo[StationId].city;
+		const state = location.state || point?.properties?.relativeLocation?.properties?.state || '';
+		let city = location.city || point?.properties?.relativeLocation?.properties?.city || localStorage.getItem('latLonQuery') || '';
+		if (stationId && stationId in StationInfo) {
+			city = StationInfo[stationId].city;
 			[city] = city.split('/');
 			city = city.replace(/\s+$/, '');
 		}
@@ -99,20 +118,23 @@ const getWeather = async (latLon, haveDataCallback) => {
 		// populate the weather parameters
 		weatherParameters.latitude = latLon.lat;
 		weatherParameters.longitude = latLon.lon;
-		weatherParameters.zoneId = point.properties.forecastZone.substr(-6);
-		weatherParameters.radarId = point.properties.radarStation.substr(-3);
-		weatherParameters.stationId = StationId;
-		weatherParameters.weatherOffice = point.properties.cwa;
 		weatherParameters.city = city;
 		weatherParameters.state = state;
-		weatherParameters.timeZone = point.properties.timeZone;
-		weatherParameters.forecast = point.properties.forecast;
-		weatherParameters.forecastGridData = point.properties.forecastGridData;
-		weatherParameters.stations = stations.features;
-		weatherParameters.relativeLocation = point.properties.relativeLocation.properties;
+		weatherParameters.country = location.country ?? '';
+		weatherParameters.countryCode = location.countryCode ?? '';
+		weatherParameters.timeZone = openMeteoForecast.timezone;
+		weatherParameters.forecast = aggregatedForecast;
+		weatherParameters.supportsNoaaDisplays = !!(supportsNoaaDisplays && point && stations?.features?.length);
+		weatherParameters.zoneId = point?.properties?.forecastZone?.substr(-6) ?? '';
+		weatherParameters.radarId = point?.properties?.radarStation?.substr(-3) ?? '';
+		weatherParameters.stationId = stationId;
+		weatherParameters.weatherOffice = point?.properties?.cwa ?? '';
+		weatherParameters.forecastGridData = point?.properties?.forecastGridData ?? '';
+		weatherParameters.stations = stations?.features ?? [];
+		weatherParameters.relativeLocation = point?.properties?.relativeLocation?.properties ?? null;
 
 		// update the main process for display purposes
-		populateWeatherParameters(weatherParameters, point.properties);
+		populateWeatherParameters(weatherParameters, point?.properties);
 
 		// reset the scroll
 		postMessage({ type: 'current-weather-scroll', method: 'reload' });
@@ -779,12 +801,12 @@ const registerProgress = (_progress) => {
 
 const populateWeatherParameters = (params, point) => {
 	document.querySelector('#spanCity').innerHTML = `${params.city}, `;
-	document.querySelector('#spanState').innerHTML = params.state;
-	document.querySelector('#spanStationId').innerHTML = params.stationId;
-	document.querySelector('#spanRadarId').innerHTML = params.radarId;
-	document.querySelector('#spanZoneId').innerHTML = params.zoneId;
-	document.querySelector('#spanOfficeId').innerHTML = point.cwa;
-	document.querySelector('#spanGridPoint').innerHTML = `${point.gridX},${point.gridY}`;
+	document.querySelector('#spanState').innerHTML = params.state || params.country || '';
+	document.querySelector('#spanStationId').innerHTML = params.stationId || '';
+	document.querySelector('#spanRadarId').innerHTML = params.radarId || '';
+	document.querySelector('#spanZoneId').innerHTML = params.zoneId || '';
+	document.querySelector('#spanOfficeId').innerHTML = point?.cwa ?? '';
+	document.querySelector('#spanGridPoint').innerHTML = point ? `${point.gridX},${point.gridY}` : '';
 };
 
 const latLonReceived = (data, haveDataCallback) => {

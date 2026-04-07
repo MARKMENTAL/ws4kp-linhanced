@@ -21,6 +21,13 @@ class LatestObservations extends WeatherDisplay {
 
 	async getData(weatherParameters, refresh) {
 		if (!super.getData(weatherParameters, refresh)) return;
+		if (!this.weatherParameters?.supportsNoaaDisplays) {
+			this.data = [];
+			this.timing.totalScreens = 0;
+			this.setStatus(STATUS.loaded);
+			return;
+		}
+		this.timing.totalScreens = 1;
 		// latest observations does a silent refresh but will not fall back to previously fetched data
 		// this is intentional because up to 30 stations are available to pull data from
 

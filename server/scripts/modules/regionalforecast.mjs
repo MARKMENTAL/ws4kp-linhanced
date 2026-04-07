@@ -31,6 +31,13 @@ class RegionalForecast extends WeatherDisplay {
 
 	async getData(weatherParameters, refresh) {
 		if (!super.getData(weatherParameters, refresh)) return;
+		if (!this.weatherParameters?.supportsNoaaDisplays) {
+			this.data = [];
+			this.timing.totalScreens = 0;
+			this.setStatus(STATUS.loaded);
+			return;
+		}
+		this.timing.totalScreens = 3;
 		// regional forecast implements a silent reload
 		// but it will not fall back to previously loaded data if data can not be loaded
 		// there are enough other cities available to populate the map sufficiently even if some do not load

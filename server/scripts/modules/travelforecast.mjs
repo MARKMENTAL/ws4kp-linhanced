@@ -34,6 +34,12 @@ class TravelForecast extends WeatherDisplay {
 	async getData(weatherParameters, refresh) {
 		// super checks for enabled
 		if (!super.getData(weatherParameters, refresh)) return;
+		if (!this.weatherParameters?.supportsNoaaDisplays) {
+			this.data = [];
+			this.timing.totalScreens = 0;
+			this.setStatus(STATUS.loaded);
+			return;
+		}
 
 		// clear stored data if not refresh
 		if (!refresh) {

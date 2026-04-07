@@ -52,6 +52,13 @@ class Hazards extends WeatherDisplay {
 	async getData(weatherParameters, refresh) {
 		// super checks for enabled
 		const superResult = super.getData(weatherParameters, refresh);
+		if (!this.weatherParameters?.supportsNoaaDisplays) {
+			this.data = [];
+			this.timing.totalScreens = 0;
+			this.getDataCallback();
+			this.setStatus(STATUS.loaded);
+			return;
+		}
 		// hazards performs a silent refresh, but does not fall back to a previous fetch if no data is available
 		// this is intentional to ensure the latest alerts only are displayed.
 

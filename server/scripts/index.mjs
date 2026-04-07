@@ -30,6 +30,7 @@ const category = categories.join(',');
 const TXT_ADDRESS_SELECTOR = '#txtLocation';
 const TOGGLE_FULL_SCREEN_SELECTOR = '#ToggleFullScreen';
 const BNT_GET_GPS_SELECTOR = '#btnGetGps';
+const LOCATION_STORAGE_KEY = 'latLonLocation';
 
 const init = async () => {
 	// Load core data first - app cannot function without it
@@ -86,7 +87,6 @@ const init = async () => {
 		paramName: 'text',
 		params: {
 			f: 'json',
-			countryCode: 'USA',
 			category,
 			maxSuggestions: 10,
 		},
@@ -117,9 +117,9 @@ const init = async () => {
 	if (parsedParameters.latLonQuery && !parsedParameters.latLon) {
 		const txtAddress = document.querySelector(TXT_ADDRESS_SELECTOR);
 		txtAddress.value = parsedParameters.latLonQuery;
-		const geometry = await geocodeLatLonQuery(parsedParameters.latLonQuery);
-		if (geometry) {
-			doRedirectToGeometry(geometry);
+		const locationResult = await geocodeLatLonQuery(parsedParameters.latLonQuery);
+		if (locationResult?.geometry) {
+			doRedirectToGeometry(locationResult.geometry, undefined, locationResult.location);
 		}
 	} else if (latLon && !fromGPS) {
 		// update in-page search box if using cached data, or parsed parameter
@@ -171,6 +171,7 @@ const init = async () => {
 
 		localStorage.removeItem('latLonQuery');
 		localStorage.removeItem('latLon');
+		localStorage.removeItem(LOCATION_STORAGE_KEY);
 		localStorage.removeItem('latLonFromGPS');
 		document.querySelector(BNT_GET_GPS_SELECTOR).classList.remove('active');
 	});
@@ -182,6 +183,24 @@ const init = async () => {
 	// register hidden settings for search and location query
 	registerHiddenSetting('latLonQuery', () => localStorage.getItem('latLonQuery'));
 	registerHiddenSetting('latLon', () => localStorage.getItem('latLon'));
+	registerHiddenSetting('latLonLocation', () => localStorage.getItem(LOCATION_STORAGE_KEY));
+};
+
+const normalizeArcGisLocation = (rawLocation = {}, fallbackLabel = '') => {
+	const attributes = rawLocation.attributes ?? rawLocation.address ?? {};
+	const countryCode = attributes.CountryCode ?? attributes.countryCode ?? attributes.country_code ?? null;
+	const country = attributes.Country ?? attributes.countryName ?? attributes.country ?? null;
+	const state = attributes.RegionAbbr ?? attributes.Region ?? attributes.Subregion ?? attributes.region ?? '';
+	const city = attributes.City ?? attributes.CityName ?? attributes.MetroArea ?? rawLocation.name ?? '';
+	const label = fallbackLabel || rawLocation.name || [city, state || country].filter(Boolean).join(', ');
+
+	return {
+		city,
+		state,
+		country,
+		countryCode,
+		label,
+	};
 };
 
 const geocodeLatLonQuery = async (query) => {
@@ -195,11 +214,36 @@ const geocodeLatLonQuery = async (query) => {
 
 		const loc = data.locations?.[0];
 		if (loc) {
-			return loc.feature.geometry;
+			return {
+				geometry: loc.feature.geometry,
+				location: normalizeArcGisLocation(loc, query),
+			};
 		}
 		return null;
 	} catch (error) {
 		console.error('Geocoding failed:', error);
+		return null;
+	}
+};
+
+const reverseGeocodeLatLon = async (latitude, longitude) => {
+	try {
+		const data = await json('https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/reverseGeocode', {
+			data: {
+				location: `${longitude},${latitude}`,
+				f: 'json',
+			},
+		});
+
+		if (!data) return null;
+
+		const location = normalizeArcGisLocation(data, `${round2(latitude, 4)}, ${round2(longitude, 4)}`);
+		return {
+			location,
+			label: location.label,
+		};
+	} catch (error) {
+		console.error('Reverse geocoding failed:', error);
 		return null;
 	}
 };
@@ -218,17 +262,21 @@ const autocompleteOnSelect = async (suggestion) => {
 	if (loc) {
 		localStorage.removeItem('latLonFromGPS');
 		document.querySelector(BNT_GET_GPS_SELECTOR).classList.remove('active');
-		doRedirectToGeometry(loc.feature.geometry);
+		doRedirectToGeometry(loc.feature.geometry, undefined, normalizeArcGisLocation(loc, suggestion.value));
 	} else {
 		console.error('An unexpected error occurred. Please try a different search string.');
 	}
 };
 
-const doRedirectToGeometry = (geom, haveDataCallback) => {
+const doRedirectToGeometry = (geom, haveDataCallback, locationMetadata) => {
 	const latLon = { lat: round2(geom.y, 4), lon: round2(geom.x, 4) };
 	// Save the query
-	localStorage.setItem('latLonQuery', document.querySelector(TXT_ADDRESS_SELECTOR).value);
+	const query = locationMetadata?.label ?? document.querySelector(TXT_ADDRESS_SELECTOR).value;
+	localStorage.setItem('latLonQuery', query);
 	localStorage.setItem('latLon', JSON.stringify(latLon));
+	if (locationMetadata) {
+		localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(locationMetadata));
+	}
 
 	// get the data
 	loadData(latLon, haveDataCallback);
@@ -477,6 +525,7 @@ const btnGetGpsClick = async () => {
 	if (btn.classList.contains('active')) {
 		btn.classList.remove('active');
 		localStorage.removeItem('latLonFromGPS');
+		localStorage.removeItem(LOCATION_STORAGE_KEY);
 		return;
 	}
 
@@ -487,22 +536,26 @@ const btnGetGpsClick = async () => {
 	const position = await getPosition();
 	const { latitude, longitude } = position.coords;
 
-	getForecastFromLatLon(latitude, longitude, true);
+	await getForecastFromLatLon(latitude, longitude, true);
 };
 
-const getForecastFromLatLon = (latitude, longitude, fromGps = false) => {
+
+const getForecastFromLatLon = async (latitude, longitude, fromGps = false) => {
 	const txtAddress = document.querySelector(TXT_ADDRESS_SELECTOR);
 	txtAddress.value = `${round2(latitude, 4)}, ${round2(longitude, 4)}`;
+	const reverseLocation = await reverseGeocodeLatLon(latitude, longitude);
+	const locationMetadata = reverseLocation?.location;
+	const query = reverseLocation?.label ?? `${round2(latitude, 4)}, ${round2(longitude, 4)}`;
 
-	doRedirectToGeometry({ y: latitude, x: longitude }, (point) => {
-		const location = point.properties.relativeLocation.properties;
-		// Save the query
-		const query = `${location.city}, ${location.state}`;
-		localStorage.setItem('latLon', JSON.stringify({ lat: latitude, lon: longitude }));
-		localStorage.setItem('latLonQuery', query);
-		localStorage.setItem('latLonFromGPS', fromGps);
-		txtAddress.value = `${location.city}, ${location.state}`;
-	});
+	localStorage.setItem('latLon', JSON.stringify({ lat: latitude, lon: longitude }));
+	localStorage.setItem('latLonQuery', query);
+	localStorage.setItem('latLonFromGPS', fromGps);
+	if (locationMetadata) {
+		localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(locationMetadata));
+	}
+	txtAddress.value = query;
+
+	doRedirectToGeometry({ y: latitude, x: longitude });
 };
 
 const getCustomCode = async () => {

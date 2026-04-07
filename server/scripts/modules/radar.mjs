@@ -49,6 +49,12 @@ class Radar extends WeatherDisplay {
 
 	async getData(weatherParameters, refresh) {
 		if (!super.getData(weatherParameters, refresh)) return;
+		if (!this.weatherParameters?.supportsNoaaDisplays) {
+			this.timing.totalScreens = 0;
+			this.setStatus(STATUS.loaded);
+			return;
+		}
+		this.timing.totalScreens = 1;
 
 		// ALASKA AND HAWAII AREN'T SUPPORTED!
 		if (this.weatherParameters.state === 'AK' || this.weatherParameters.state === 'HI') {

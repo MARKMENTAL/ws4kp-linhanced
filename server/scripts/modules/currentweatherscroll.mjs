@@ -1,4 +1,3 @@
-import { locationCleanup } from './utils/string.mjs';
 import getCurrentWeather from './currentweather.mjs';
 import { currentDisplay } from './navigation.mjs';
 import getHazards from './hazards.mjs';
@@ -150,21 +149,10 @@ const baseScreens = [
 	// hazards
 	hazards,
 	// station name
-	(data) => {
-		const location = (StationInfo[data.station.properties.stationIdentifier]?.city ?? locationCleanup(data.station.properties.name)).substr(0, 20);
-		return `Conditions at ${location}`;
-	},
+	(data) => `Conditions at ${data.city.substr(0, 20)}`,
 
 	// temperature
-	(data) => {
-		let text = `Temp: ${data.Temperature}${degree}${data.TemperatureUnit}`;
-		if (data.observations.heatIndex.value) {
-			text += `    Heat Index: ${data.HeatIndex}${degree}${data.TemperatureUnit}`;
-		} else if (data.observations.windChill.value) {
-			text += `    Wind Chill: ${data.WindChill}${degree}${data.TemperatureUnit}`;
-		}
-		return text;
-	},
+	(data) => `Temp: ${data.Temperature}${degree}${data.TemperatureUnit}`,
 
 	// humidity
 	(data) => `Humidity: ${data.Humidity}%   Dewpoint: ${data.DewPoint}${degree}${data.TemperatureUnit}`,

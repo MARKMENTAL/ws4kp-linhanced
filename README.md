@@ -48,9 +48,18 @@ Open your browser and navigate to https://localhost:8080
 
 ## Does WeatherStar 4000+ work outside of the USA?
 
-This project is tightly coupled to [NOAA's Weather API](https://www.weather.gov/documentation/services-web-api), which is exclusive to the United States. Using NOAA's Weather API is a crucial requirement to provide an authentic WeatherStar 4000+ experience.
+Yes for the core forecast screens. The main weather flow now uses Open-Meteo so search, current conditions, hourly, local forecast, extended forecast, and almanac work internationally.
 
-If you would like to display weather information for international locations (outside of the USA), please checkout a fork of this project created by [@mwood77](https://github.com/mwood77):
+Some legacy displays still rely on [NOAA's Weather API](https://www.weather.gov/documentation/services-web-api) and remain available only for United States locations for now:
+
+* Hazards
+* Latest Observations
+* Regional Forecast
+* Travel Forecast
+* SPC Outlook
+* Local Radar
+
+Earlier international work on this idea was explored in a fork created by [@mwood77](https://github.com/mwood77):
 - [`ws4kp-international`](https://github.com/mwood77/ws4kp-international)
 
 ## Deployment Modes

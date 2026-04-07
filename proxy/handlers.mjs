@@ -50,3 +50,10 @@ export const forecastProxy = async (req, res) => {
 		skipParams: ['u'],
 	});
 };
+
+export const openMeteoProxy = async (req, res) => {
+	await cache.handleRequest(req, res, 'https://api.open-meteo.com', {
+		serviceName: 'Open-Meteo',
+		skipParams: ['u'],
+	});
+};
