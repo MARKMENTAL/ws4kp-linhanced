@@ -1,242 +1,338 @@
-[
-	{
-		"Name": "Atlanta",
-		"Latitude": 33.749,
-		"Longitude": -84.388,
-		"point": {
-			"x": 51,
-			"y": 87,
-			"wfo": "FFC"
+{
+	"north-america": [
+		{
+			"Name": "Atlanta",
+			"Latitude": 33.749,
+			"Longitude": -84.388
+		},
+		{
+			"Name": "Chicago",
+			"Latitude": 41.8781,
+			"Longitude": -87.6298
+		},
+		{
+			"Name": "Dallas",
+			"Latitude": 32.7767,
+			"Longitude": -96.797
+		},
+		{
+			"Name": "Los Angeles",
+			"Latitude": 34.0522,
+			"Longitude": -118.2437
+		},
+		{
+			"Name": "Mexico City",
+			"Latitude": 19.4326,
+			"Longitude": -99.1332
+		},
+		{
+			"Name": "Miami",
+			"Latitude": 25.7617,
+			"Longitude": -80.1918
+		},
+		{
+			"Name": "Montreal",
+			"Latitude": 45.5019,
+			"Longitude": -73.5674
+		},
+		{
+			"Name": "New York",
+			"Latitude": 40.7128,
+			"Longitude": -74.006
+		},
+		{
+			"Name": "Seattle",
+			"Latitude": 47.6062,
+			"Longitude": -122.3321
+		},
+		{
+			"Name": "Toronto",
+			"Latitude": 43.6532,
+			"Longitude": -79.3832
+		},
+		{
+			"Name": "Vancouver",
+			"Latitude": 49.2827,
+			"Longitude": -123.1207
+		},
+		{
+			"Name": "Washington DC",
+			"Latitude": 38.8951,
+			"Longitude": -77.0364
 		}
-	},
-	{
-		"Name": "Boston",
-		"Latitude": 42.3584,
-		"Longitude": -71.0598,
-		"point": {
-			"x": 71,
-			"y": 90,
-			"wfo": "BOX"
+	],
+	"south-america": [
+		{
+			"Name": "Bogota",
+			"Latitude": 4.711,
+			"Longitude": -74.0721
+		},
+		{
+			"Name": "Buenos Aires",
+			"Latitude": -34.6037,
+			"Longitude": -58.3816
+		},
+		{
+			"Name": "Lima",
+			"Latitude": -12.0464,
+			"Longitude": -77.0428
+		},
+		{
+			"Name": "Quito",
+			"Latitude": -0.1807,
+			"Longitude": -78.4678
+		},
+		{
+			"Name": "Rio de Janeiro",
+			"Latitude": -22.9068,
+			"Longitude": -43.1729
+		},
+		{
+			"Name": "Santiago",
+			"Latitude": -33.4489,
+			"Longitude": -70.6693
+		},
+		{
+			"Name": "Sao Paulo",
+			"Latitude": -23.5558,
+			"Longitude": -46.6396
 		}
-	},
-	{
-		"Name": "Chicago",
-		"Latitude": 41.9796,
-		"Longitude": -87.9045,
-		"point": {
-			"x": 66,
-			"y": 77,
-			"wfo": "LOT"
+	],
+	"europe": [
+		{
+			"Name": "Amsterdam",
+			"Latitude": 52.3676,
+			"Longitude": 4.9041
+		},
+		{
+			"Name": "Berlin",
+			"Latitude": 52.52,
+			"Longitude": 13.405
+		},
+		{
+			"Name": "London",
+			"Latitude": 51.5072,
+			"Longitude": -0.1276
+		},
+		{
+			"Name": "Madrid",
+			"Latitude": 40.4168,
+			"Longitude": -3.7038
+		},
+		{
+			"Name": "Paris",
+			"Latitude": 48.8566,
+			"Longitude": 2.3522
+		},
+		{
+			"Name": "Rome",
+			"Latitude": 41.9028,
+			"Longitude": 12.4964
+		},
+		{
+			"Name": "Stockholm",
+			"Latitude": 59.3293,
+			"Longitude": 18.0686
+		},
+		{
+			"Name": "Vienna",
+			"Latitude": 48.2082,
+			"Longitude": 16.3738
 		}
-	},
-	{
-		"Name": "Cleveland",
-		"Latitude": 41.4995,
-		"Longitude": -81.6954,
-		"point": {
-			"x": 83,
-			"y": 65,
-			"wfo": "CLE"
+	],
+	"africa": [
+		{
+			"Name": "Cairo",
+			"Latitude": 30.0444,
+			"Longitude": 31.2357
+		},
+		{
+			"Name": "Cape Town",
+			"Latitude": -33.9249,
+			"Longitude": 18.4241
+		},
+		{
+			"Name": "Casablanca",
+			"Latitude": 33.5731,
+			"Longitude": -7.5898
+		},
+		{
+			"Name": "Johannesburg",
+			"Latitude": -26.2041,
+			"Longitude": 28.0473
+		},
+		{
+			"Name": "Lagos",
+			"Latitude": 6.5244,
+			"Longitude": 3.3792
+		},
+		{
+			"Name": "Nairobi",
+			"Latitude": -1.2864,
+			"Longitude": 36.8172
 		}
-	},
-	{
-		"Name": "Dallas",
-		"Latitude": 32.8959,
-		"Longitude": -97.0372,
-		"point": {
-			"x": 80,
-			"y": 109,
-			"wfo": "FWD"
+	],
+	"middle-east": [
+		{
+			"Name": "Amman",
+			"Latitude": 31.9539,
+			"Longitude": 35.9106
+		},
+		{
+			"Name": "Dubai",
+			"Latitude": 25.2048,
+			"Longitude": 55.2708
+		},
+		{
+			"Name": "Doha",
+			"Latitude": 25.2854,
+			"Longitude": 51.531
+		},
+		{
+			"Name": "Jerusalem",
+			"Latitude": 31.7683,
+			"Longitude": 35.2137
+		},
+		{
+			"Name": "Kuwait City",
+			"Latitude": 29.3759,
+			"Longitude": 47.9774
+		},
+		{
+			"Name": "Riyadh",
+			"Latitude": 24.7136,
+			"Longitude": 46.6753
 		}
-	},
-	{
-		"Name": "Denver",
-		"Latitude": 39.7391,
-		"Longitude": -104.9847,
-		"point": {
-			"x": 63,
-			"y": 61,
-			"wfo": "BOU"
+	],
+	"east-asia": [
+		{
+			"Name": "Beijing",
+			"Latitude": 39.9042,
+			"Longitude": 116.4074
+		},
+		{
+			"Name": "Hong Kong",
+			"Latitude": 22.3193,
+			"Longitude": 114.1694
+		},
+		{
+			"Name": "Osaka",
+			"Latitude": 34.6937,
+			"Longitude": 135.5023
+		},
+		{
+			"Name": "Seoul",
+			"Latitude": 37.5665,
+			"Longitude": 126.978
+		},
+		{
+			"Name": "Shanghai",
+			"Latitude": 31.2304,
+			"Longitude": 121.4737
+		},
+		{
+			"Name": "Taipei",
+			"Latitude": 25.033,
+			"Longitude": 121.5654
+		},
+		{
+			"Name": "Tokyo",
+			"Latitude": 35.6762,
+			"Longitude": 139.6503
 		}
-	},
-	{
-		"Name": "Detroit",
-		"Latitude": 42.3314,
-		"Longitude": -83.0457,
-		"point": {
-			"x": 66,
-			"y": 34,
-			"wfo": "DTX"
+	],
+	"oceania": [
+		{
+			"Name": "Auckland",
+			"Latitude": -36.8509,
+			"Longitude": 174.7645
+		},
+		{
+			"Name": "Brisbane",
+			"Latitude": -27.4698,
+			"Longitude": 153.0251
+		},
+		{
+			"Name": "Melbourne",
+			"Latitude": -37.8136,
+			"Longitude": 144.9631
+		},
+		{
+			"Name": "Perth",
+			"Latitude": -31.9523,
+			"Longitude": 115.8613
+		},
+		{
+			"Name": "Sydney",
+			"Latitude": -33.8688,
+			"Longitude": 151.2093
+		},
+		{
+			"Name": "Wellington",
+			"Latitude": -41.2866,
+			"Longitude": 174.7756
 		}
-	},
-	{
-		"Name": "Hartford",
-		"Latitude": 41.7637,
-		"Longitude": -72.6851,
-		"point": {
-			"x": 21,
-			"y": 54,
-			"wfo": "BOX"
+	],
+	"global": [
+		{
+			"Name": "Dubai",
+			"Latitude": 25.2048,
+			"Longitude": 55.2708
+		},
+		{
+			"Name": "Johannesburg",
+			"Latitude": -26.2041,
+			"Longitude": 28.0473
+		},
+		{
+			"Name": "London",
+			"Latitude": 51.5072,
+			"Longitude": -0.1276
+		},
+		{
+			"Name": "Los Angeles",
+			"Latitude": 34.0522,
+			"Longitude": -118.2437
+		},
+		{
+			"Name": "Mexico City",
+			"Latitude": 19.4326,
+			"Longitude": -99.1332
+		},
+		{
+			"Name": "New York",
+			"Latitude": 40.7128,
+			"Longitude": -74.006
+		},
+		{
+			"Name": "Paris",
+			"Latitude": 48.8566,
+			"Longitude": 2.3522
+		},
+		{
+			"Name": "Sao Paulo",
+			"Latitude": -23.5558,
+			"Longitude": -46.6396
+		},
+		{
+			"Name": "Singapore",
+			"Latitude": 1.3521,
+			"Longitude": 103.8198
+		},
+		{
+			"Name": "Sydney",
+			"Latitude": -33.8688,
+			"Longitude": 151.2093
+		},
+		{
+			"Name": "Tokyo",
+			"Latitude": 35.6762,
+			"Longitude": 139.6503
+		},
+		{
+			"Name": "Toronto",
+			"Latitude": 43.6532,
+			"Longitude": -79.3832
 		}
-	},
-	{
-		"Name": "Houston",
-		"Latitude": 29.7633,
-		"Longitude": -95.3633,
-		"point": {
-			"x": 63,
-			"y": 95,
-			"wfo": "HGX"
-		}
-	},
-	{
-		"Name": "Indianapolis",
-		"Latitude": 39.7684,
-		"Longitude": -86.158,
-		"point": {
-			"x": 58,
-			"y": 69,
-			"wfo": "IND"
-		}
-	},
-	{
-		"Name": "Los Angeles",
-		"Latitude": 34.0522,
-		"Longitude": -118.2437,
-		"point": {
-			"x": 155,
-			"y": 45,
-			"wfo": "LOX"
-		}
-	},
-	{
-		"Name": "Miami",
-		"Latitude": 25.7743,
-		"Longitude": -80.1937,
-		"point": {
-			"x": 110,
-			"y": 51,
-			"wfo": "MFL"
-		}
-	},
-	{
-		"Name": "Minneapolis",
-		"Latitude": 44.98,
-		"Longitude": -93.2638,
-		"point": {
-			"x": 108,
-			"y": 72,
-			"wfo": "MPX"
-		}
-	},
-	{
-		"Name": "New York",
-		"Latitude": 40.7142,
-		"Longitude": -74.0059,
-		"point": {
-			"x": 33,
-			"y": 35,
-			"wfo": "OKX"
-		}
-	},
-	{
-		"Name": "Norfolk",
-		"Latitude": 36.8468,
-		"Longitude": -76.2852,
-		"point": {
-			"x": 90,
-			"y": 52,
-			"wfo": "AKQ"
-		}
-	},
-	{
-		"Name": "Orlando",
-		"Latitude": 28.5383,
-		"Longitude": -81.3792,
-		"point": {
-			"x": 26,
-			"y": 68,
-			"wfo": "MLB"
-		}
-	},
-	{
-		"Name": "Philadelphia",
-		"Latitude": 39.9523,
-		"Longitude": -75.1638,
-		"point": {
-			"x": 50,
-			"y": 76,
-			"wfo": "PHI"
-		}
-	},
-	{
-		"Name": "Pittsburgh",
-		"Latitude": 40.4406,
-		"Longitude": -79.9959,
-		"point": {
-			"x": 78,
-			"y": 66,
-			"wfo": "PBZ"
-		}
-	},
-	{
-		"Name": "St. Louis",
-		"Latitude": 38.6273,
-		"Longitude": -90.1979,
-		"point": {
-			"x": 95,
-			"y": 74,
-			"wfo": "LSX"
-		}
-	},
-	{
-		"Name": "San Francisco",
-		"Latitude": 37.7749,
-		"Longitude": -122.4194,
-		"point": {
-			"x": 85,
-			"y": 105,
-			"wfo": "MTR"
-		}
-	},
-	{
-		"Name": "Seattle",
-		"Latitude": 47.6062,
-		"Longitude": -122.3321,
-		"point": {
-			"x": 125,
-			"y": 68,
-			"wfo": "SEW"
-		}
-	},
-	{
-		"Name": "Syracuse",
-		"Latitude": 43.0481,
-		"Longitude": -76.1474,
-		"point": {
-			"x": 52,
-			"y": 99,
-			"wfo": "BGM"
-		}
-	},
-	{
-		"Name": "Tampa",
-		"Latitude": 27.9475,
-		"Longitude": -82.4584,
-		"point": {
-			"x": 71,
-			"y": 97,
-			"wfo": "TBW"
-		}
-	},
-	{
-		"Name": "Washington DC",
-		"Latitude": 38.8951,
-		"Longitude": -77.0364,
-		"point": {
-			"x": 97,
-			"y": 71,
-			"wfo": "LWX"
-		}
-	}
-]
+	]
+}

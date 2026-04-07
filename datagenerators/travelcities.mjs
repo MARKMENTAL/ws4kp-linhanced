@@ -1,39 +1,25 @@
-// look up points for each travel city
 import { readFile, writeFile } from 'fs/promises';
-import chunk from './chunk.mjs';
-import https from './https.mjs';
 
-// source data
-const travelCities = JSON.parse(await readFile('./datagenerators/travelcities-raw.json'));
+const travelCitiesByRegion = JSON.parse(await readFile('./datagenerators/travelcities-raw.json'));
 
-const result = [];
-const dataChunks = chunk(travelCities, 5);
+const validateCity = (city, region) => {
+	if (!city?.Name || typeof city.Latitude !== 'number' || typeof city.Longitude !== 'number') {
+		throw new Error(`Invalid travel city in region ${region}: ${JSON.stringify(city)}`);
+	}
 
-// for loop intentional for use of await
-// this keeps the api from getting overwhelmed
-for (let i = 0; i < dataChunks.length; i += 1) {
-	const cityChunk = dataChunks[i];
+	return {
+		Name: city.Name,
+		Latitude: city.Latitude,
+		Longitude: city.Longitude,
+	};
+};
 
-	// eslint-disable-next-line no-await-in-loop
-	const chunkResult = await Promise.all(cityChunk.map(async (city) => {
-		try {
-			const data = await https(`https://api.weather.gov/points/${city.Latitude},${city.Longitude}`);
-			const point = JSON.parse(data);
-			return {
-				...city,
-				point: {
-					x: point.properties.gridX,
-					y: point.properties.gridY,
-					wfo: point.properties.gridId,
-				},
-			};
-		} catch (e) {
-			console.error(e);
-			return city;
-		}
-	}));
+const result = Object.fromEntries(Object.entries(travelCitiesByRegion).map(([region, cities]) => {
+	if (!Array.isArray(cities)) {
+		throw new Error(`Travel city region ${region} must be an array`);
+	}
 
-	result.push(...chunkResult);
-}
+	return [region, cities.map((city) => validateCity(city, region))];
+}));
 
-await writeFile('./datagenerators/output/travelcities.json', JSON.stringify(result, null, '	'));
+await writeFile('./datagenerators/output/travelcities.json', JSON.stringify(result, null, '\t'));

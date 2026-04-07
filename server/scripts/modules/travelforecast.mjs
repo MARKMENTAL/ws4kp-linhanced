@@ -32,6 +32,15 @@ class TravelForecast extends WeatherDisplay {
 		};
 	}
 
+	resetScrollCache() {
+		this.scrollCache = {
+			displayHeight: 0,
+			contentHeight: 0,
+			maxOffset: 0,
+			travelLines: null,
+		};
+	}
+
 	async getData(weatherParameters, refresh) {
 		// super checks for enabled
 		if (!super.getData(weatherParameters, refresh)) return;
@@ -42,8 +51,9 @@ class TravelForecast extends WeatherDisplay {
 		}
 
 		const temperatureConverter = temperature();
+		const selectedTravelCities = getTravelCitiesForLocation(this.weatherParameters);
 
-		const forecastPromises = TravelCities.map(async (city, index) => {
+		const forecastPromises = selectedTravelCities.map(async (city, index) => {
 			try {
 				let forecast;
 				forecast = await getAggregatedOpenMeteoForecast(city.Latitude, city.Longitude);
@@ -107,6 +117,7 @@ class TravelForecast extends WeatherDisplay {
 		// get the element and populate
 		const list = this.elem.querySelector('.travel-lines');
 		list.innerHTML = '';
+		this.resetScrollCache();
 
 		// set up variables
 		const cities = this.data;
@@ -172,11 +183,12 @@ class TravelForecast extends WeatherDisplay {
 		// get the travel lines element and cache measurements if needed
 		const travelLines = this.elem.querySelector('.travel-lines');
 		if (!travelLines) return;
+		const displayHeight = getTravelDisplayHeight(this.elem);
 
 		// update cache if needed (when content changes or first run)
-		if (this.scrollCache.travelLines !== travelLines || this.scrollCache.displayHeight === 0) {
-			this.scrollCache.displayHeight = this.elem.querySelector('.main').offsetHeight;
-			this.scrollCache.contentHeight = travelLines.offsetHeight;
+		if (this.scrollCache.travelLines !== travelLines || this.scrollCache.displayHeight !== displayHeight) {
+			this.scrollCache.displayHeight = displayHeight;
+			this.scrollCache.contentHeight = travelLines.scrollHeight;
 			this.scrollCache.maxOffset = Math.max(0, this.scrollCache.contentHeight - this.scrollCache.displayHeight);
 			this.scrollCache.travelLines = travelLines;
 
@@ -201,8 +213,9 @@ class TravelForecast extends WeatherDisplay {
 	}
 
 	setTiming(list) {
-		const container = this.elem.querySelector('.main');
-		const timingConfig = calculateScrollTiming(list, container, {
+		const timingConfig = calculateScrollTiming(list, {
+			offsetHeight: getTravelDisplayHeight(this.elem),
+		}, {
 			staticDisplay: 5.0, // special static display time for travel forecast
 		});
 
@@ -214,6 +227,99 @@ class TravelForecast extends WeatherDisplay {
 		this.calcNavTiming();
 	}
 }
+
+const REGION_BY_COUNTRY_CODE = {
+	US: 'north-america',
+	CA: 'north-america',
+	MX: 'north-america',
+	BR: 'south-america',
+	AR: 'south-america',
+	CL: 'south-america',
+	PE: 'south-america',
+	CO: 'south-america',
+	EC: 'south-america',
+	UY: 'south-america',
+	PY: 'south-america',
+	BO: 'south-america',
+	VE: 'south-america',
+	GB: 'europe',
+	IE: 'europe',
+	FR: 'europe',
+	DE: 'europe',
+	ES: 'europe',
+	PT: 'europe',
+	IT: 'europe',
+	NL: 'europe',
+	BE: 'europe',
+	LU: 'europe',
+	CH: 'europe',
+	AT: 'europe',
+	DK: 'europe',
+	NO: 'europe',
+	SE: 'europe',
+	FI: 'europe',
+	PL: 'europe',
+	CZ: 'europe',
+	SK: 'europe',
+	HU: 'europe',
+	RO: 'europe',
+	BG: 'europe',
+	GR: 'europe',
+	HR: 'europe',
+	SI: 'europe',
+	RS: 'europe',
+	BA: 'europe',
+	ME: 'europe',
+	AL: 'europe',
+	MK: 'europe',
+	EE: 'europe',
+	LV: 'europe',
+	LT: 'europe',
+	IS: 'europe',
+	UA: 'europe',
+	MD: 'europe',
+	JP: 'east-asia',
+	KR: 'east-asia',
+	CN: 'east-asia',
+	TW: 'east-asia',
+	HK: 'east-asia',
+	MO: 'east-asia',
+	AU: 'oceania',
+	NZ: 'oceania',
+	EG: 'africa',
+	NG: 'africa',
+	KE: 'africa',
+	ZA: 'africa',
+	MA: 'africa',
+	TZ: 'africa',
+	GH: 'africa',
+	DZ: 'africa',
+	AE: 'middle-east',
+	SA: 'middle-east',
+	IL: 'middle-east',
+	JO: 'middle-east',
+	QA: 'middle-east',
+	KW: 'middle-east',
+	OM: 'middle-east',
+	BH: 'middle-east',
+	LB: 'middle-east',
+	IQ: 'middle-east',
+};
+
+const getTravelCitiesForLocation = (weatherParameters) => {
+	if (Array.isArray(TravelCities)) return TravelCities;
+
+	const countryCode = (weatherParameters?.countryCode ?? '').toUpperCase();
+	const selectedRegion = REGION_BY_COUNTRY_CODE[countryCode];
+	return TravelCities[selectedRegion] ?? TravelCities.global ?? TravelCities['north-america'] ?? [];
+};
+
+const getTravelDisplayHeight = (elem) => {
+	const main = elem.querySelector('.main');
+	const header = elem.querySelector('.column-headers');
+	if (!main) return 0;
+	return Math.max(0, main.offsetHeight - (header?.offsetHeight ?? 0));
+};
 
 // effectively returns early on the first found date
 const getTravelCitiesDayName = (cities) => cities.reduce((dayName, city) => {
