@@ -57,3 +57,10 @@ export const openMeteoProxy = async (req, res) => {
 		skipParams: ['u'],
 	});
 };
+
+export const rainViewerProxy = async (req, res) => {
+	await cache.handleRequest(req, res, 'https://api.rainviewer.com', {
+		serviceName: 'RainViewer',
+		skipParams: ['u'],
+	});
+};

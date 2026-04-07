@@ -46,6 +46,10 @@ const rewriteUrl = (_url) => {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
 		url.pathname = `/open-meteo${url.pathname}`;
+	} else if (url.origin === 'https://api.rainviewer.com') {
+		url.protocol = window.location.protocol;
+		url.host = window.location.host;
+		url.pathname = `/rainviewer${url.pathname}`;
 	} else if (typeof OVERRIDES !== 'undefined' && OVERRIDES?.RADAR_HOST && url.origin === `https://${OVERRIDES.RADAR_HOST}`) {
 		// Handle override radar host
 		url.protocol = window.location.protocol;
