@@ -7,7 +7,9 @@ import { registerDisplay } from './navigation.mjs';
 class Radar extends WeatherDisplay {
 	static metadataUrl = 'https://api.rainviewer.com/public/weather-maps.json';
 
-	static baseMapUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}';
+	static baseMapUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+
+	static boundaryMapUrl = 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
 
 	constructor(navId, elemId) {
 		super(navId, elemId, 'Local Radar');
@@ -17,6 +19,7 @@ class Radar extends WeatherDisplay {
 
 		this.map = null;
 		this.baseLayer = null;
+		this.boundaryLayer = null;
 		this.locationMarker = null;
 		this.radarLayers = [];
 		this.mapFrames = [];
@@ -98,6 +101,16 @@ class Radar extends WeatherDisplay {
 		});
 
 		this.baseLayer.addTo(this.map);
+
+		this.boundaryLayer = window.L.tileLayer(Radar.boundaryMapUrl, {
+			maxZoom: 10,
+			minZoom: 1,
+			opacity: 0.6,
+			crossOrigin: true,
+			className: 'radar-boundary-layer',
+		});
+
+		this.boundaryLayer.addTo(this.map);
 	}
 
 	resetRadarLayers() {
