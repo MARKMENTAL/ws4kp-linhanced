@@ -79,7 +79,6 @@ const mjsSources = [
 	'server/scripts/modules/extendedforecast.mjs',
 	'server/scripts/modules/hourly.mjs',
 	'server/scripts/modules/hourly-graph.mjs',
-	'server/scripts/modules/latestobservations.mjs',
 	'server/scripts/modules/localforecast.mjs',
 	'server/scripts/modules/radar.mjs',
 	'server/scripts/modules/regionalforecast.mjs',
