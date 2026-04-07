@@ -119,7 +119,7 @@ class Radar extends WeatherDisplay {
 	}
 
 	createRadarLayer(frame) {
-		const tileUrl = `${this.radarHost}${frame.path}/256/{z}/{x}/{y}/4/1_1.png`;
+		const tileUrl = `${this.radarHost}${frame.path}/256/{z}/{x}/{y}/4/1_0.png`;
 		const layer = window.L.tileLayer(tileUrl, {
 			tileSize: 256,
 			opacity: 0,
