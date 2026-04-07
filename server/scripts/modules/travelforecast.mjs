@@ -8,15 +8,14 @@ import { registerDisplay } from './navigation.mjs';
 import calculateScrollTiming from './utils/scroll-timing.mjs';
 import { debugFlag } from './utils/debug.mjs';
 import { temperature } from './utils/units.mjs';
-import { getAggregatedOpenMeteoForecast } from './utils/weather.mjs';
+import { getCachedAggregatedOpenMeteoForecast } from './utils/weather.mjs';
+
+const MIN_TRAVEL_CITIES = 5;
 
 class TravelForecast extends WeatherDisplay {
 	constructor(navId, elemId, defaultActive) {
 		// special height and width for scrolling
 		super(navId, elemId, 'Travel Forecast', defaultActive);
-
-		// add previous data cache
-		this.previousData = [];
 
 		// cache for scroll calculations
 		// This cache is essential because baseCountChange() is called 25 times per second (every 40ms)
@@ -45,30 +44,13 @@ class TravelForecast extends WeatherDisplay {
 		// super checks for enabled
 		if (!super.getData(weatherParameters, refresh)) return;
 
-		// clear stored data if not refresh
-		if (!refresh) {
-			this.previousData = [];
-		}
-
 		const temperatureConverter = temperature();
 		const selectedTravelCities = getTravelCitiesForLocation(this.weatherParameters);
 
-		const forecastPromises = selectedTravelCities.map(async (city, index) => {
+		const forecastPromises = selectedTravelCities.map(async (city) => {
 			try {
-				let forecast;
-				forecast = await getAggregatedOpenMeteoForecast(city.Latitude, city.Longitude);
-
-				if (forecast) {
-					// store for the next run
-					this.previousData[index] = forecast;
-				} else if (this.previousData?.[index]) {
-					// if there's previous data use it
-					if (debugFlag('travelforecast')) {
-						console.warn(`Using previous forecast data for ${city.Name} travel forecast`);
-					}
-					forecast = this.previousData?.[index];
-				} else {
-					// no current data and no previous data available
+				const forecast = await getCachedAggregatedOpenMeteoForecast(city.Latitude, city.Longitude);
+				if (!forecast) {
 					if (debugFlag('verbose-failures')) {
 						console.warn(`No travel forecast for ${city.Name} available`);
 					}
@@ -100,7 +82,11 @@ class TravelForecast extends WeatherDisplay {
 
 		// wait for all forecasts using centralized safe Promise handling
 		const forecasts = await safePromiseAll(forecastPromises);
-		this.data = forecasts;
+		const validForecasts = forecasts.filter((forecast) => forecast && !forecast.error && forecast.high !== undefined);
+		const invalidForecasts = forecasts.filter((forecast) => forecast && forecast.error);
+		this.data = validForecasts.length >= MIN_TRAVEL_CITIES
+			? validForecasts
+			: [...validForecasts, ...invalidForecasts].slice(0, Math.max(validForecasts.length, MIN_TRAVEL_CITIES));
 
 		// test for some data available in at least one forecast
 		const hasData = this.data.some((forecast) => forecast.high);

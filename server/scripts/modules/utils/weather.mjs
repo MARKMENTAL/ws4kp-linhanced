@@ -16,7 +16,9 @@ const OPEN_METEO_RADAR_OBSERVATION_PARAMETERS = [
 ].join('&');
 
 const OPEN_METEO_OBSERVATION_CACHE_TTL_MS = 10 * 60 * 1000;
+const OPEN_METEO_TRAVEL_FORECAST_CACHE_TTL_MS = 30 * 60 * 1000;
 const openMeteoObservationCache = new Map();
+const openMeteoTravelForecastCache = new Map();
 
 const getPoint = async (lat, lon) => {
 	const point = await safeJson(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
@@ -56,6 +58,30 @@ const getAggregatedOpenMeteoForecast = async (lat, lon) => {
 		forecast,
 		aggregatedForecast,
 	};
+};
+
+const getCachedAggregatedOpenMeteoForecast = async (lat, lon) => {
+	const cacheKey = `${lat.toFixed(4)},${lon.toFixed(4)}`;
+	const cachedEntry = openMeteoTravelForecastCache.get(cacheKey);
+	const now = Date.now();
+	if (cachedEntry && (now - cachedEntry.fetchedAt) < OPEN_METEO_TRAVEL_FORECAST_CACHE_TTL_MS) {
+		return cachedEntry.data;
+	}
+
+	const forecast = await getAggregatedOpenMeteoForecast(lat, lon);
+	if (forecast) {
+		openMeteoTravelForecastCache.set(cacheKey, {
+			data: forecast,
+			fetchedAt: now,
+		});
+		return forecast;
+	}
+
+	if (cachedEntry) {
+		return cachedEntry.data;
+	}
+
+	return false;
 };
 
 const getOpenMeteoObservationSnapshot = async (lat, lon) => {
@@ -199,6 +225,7 @@ export {
 	getPoint,
 	getOpenMeteoForecast,
 	getAggregatedOpenMeteoForecast,
+	getCachedAggregatedOpenMeteoForecast,
 	getOpenMeteoObservationSnapshot,
 	aggregateWeatherForecastData,
 	getConditionText,
