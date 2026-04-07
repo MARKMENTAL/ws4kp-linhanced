@@ -23,6 +23,8 @@
 		width: 640px;
 		height: 60px;
 		padding-top: 30px;
+		position: relative;
+		z-index: 20;
 
 		.title {
 			color: c.$title-color;

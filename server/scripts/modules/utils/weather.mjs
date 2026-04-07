@@ -8,6 +8,13 @@ const OPEN_METEO_FORECAST_PARAMETERS = [
 	'models=best_match',
 ].join('&');
 
+const OPEN_METEO_RADAR_OBSERVATION_PARAMETERS = [
+	'hourly=temperature_2m,weather_code,is_day',
+	'forecast_days=1',
+	'timezone=auto',
+	'models=best_match',
+].join('&');
+
 const getPoint = async (lat, lon) => {
 	const point = await safeJson(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
 	if (!point) {
@@ -45,6 +52,36 @@ const getAggregatedOpenMeteoForecast = async (lat, lon) => {
 	return {
 		forecast,
 		aggregatedForecast,
+	};
+};
+
+const getOpenMeteoObservationSnapshot = async (lat, lon) => {
+	const forecast = await safeJson(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&${OPEN_METEO_RADAR_OBSERVATION_PARAMETERS}`);
+	if (!forecast?.hourly?.time?.length) {
+		if (debugFlag('verbose-failures')) {
+			console.warn(`Unable to get Open-Meteo radar observation snapshot for ${lat},${lon}`);
+		}
+		return false;
+	}
+
+	const now = Date.now();
+	let nearestIndex = 0;
+	let nearestDelta = Number.POSITIVE_INFINITY;
+
+	forecast.hourly.time.forEach((time, index) => {
+		const delta = Math.abs(new Date(time).getTime() - now);
+		if (delta < nearestDelta) {
+			nearestDelta = delta;
+			nearestIndex = index;
+		}
+	});
+
+	return {
+		time: forecast.hourly.time[nearestIndex],
+		temperature: forecast.hourly.temperature_2m?.[nearestIndex] ?? null,
+		weatherCode: forecast.hourly.weather_code?.[nearestIndex] ?? 0,
+		isDay: Boolean(forecast.hourly.is_day?.[nearestIndex] ?? 1),
+		timezone: forecast.timezone,
 	};
 };
 
@@ -143,6 +180,7 @@ export {
 	getPoint,
 	getOpenMeteoForecast,
 	getAggregatedOpenMeteoForecast,
+	getOpenMeteoObservationSnapshot,
 	aggregateWeatherForecastData,
 	getConditionText,
 };

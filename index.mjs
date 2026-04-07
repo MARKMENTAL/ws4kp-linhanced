@@ -81,6 +81,7 @@ const parseLwnStories = (html) => {
 const travelCities = JSON.parse(await readFile('./datagenerators/output/travelcities.json'));
 const regionalCities = JSON.parse(await readFile('./datagenerators/output/regionalcities.json'));
 const stationInfo = JSON.parse(await readFile('./datagenerators/output/stations.json'));
+const radarCities = JSON.parse(await readFile('./datagenerators/output/radarcities.json'));
 
 const app = express();
 const port = process.env.WS4KP_PORT ?? 8080;
@@ -265,6 +266,7 @@ const dataEndpoints = {
 	travelcities: travelCities,
 	regionalcities: regionalCities,
 	stations: stationInfo,
+	radarcities: radarCities,
 };
 
 Object.entries(dataEndpoints).forEach(([name, data]) => {

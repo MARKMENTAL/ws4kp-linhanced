@@ -3,13 +3,16 @@ import { DateTime } from '../vendor/auto/luxon.mjs';
 import { safeJson } from './utils/fetch.mjs';
 import WeatherDisplay from './weatherdisplay.mjs';
 import { registerDisplay } from './navigation.mjs';
+import {
+	createMap,
+	addBaseLayers,
+	setPrimaryLocationMarker,
+	loadNearbyObservationMarkers,
+	clearMarkers,
+} from './utils/leaflet-weather-map.mjs';
 
 class Radar extends WeatherDisplay {
 	static metadataUrl = 'https://api.rainviewer.com/public/weather-maps.json';
-
-	static baseMapUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
-
-	static boundaryMapUrl = 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
 
 	constructor(navId, elemId) {
 		super(navId, elemId, 'Local Radar');
@@ -21,6 +24,7 @@ class Radar extends WeatherDisplay {
 		this.baseLayer = null;
 		this.boundaryLayer = null;
 		this.locationMarker = null;
+		this.nearbyMarkers = [];
 		this.radarLayers = [];
 		this.mapFrames = [];
 		this.radarHost = '';
@@ -42,6 +46,7 @@ class Radar extends WeatherDisplay {
 			this.map.invalidateSize();
 			this.map.setView([this.weatherParameters.latitude, this.weatherParameters.longitude], 7);
 			this.updateLocationMarker();
+			await this.updateNearbyMarkers();
 
 			const radarMetadata = await safeJson(Radar.metadataUrl, {
 				retryCount: 2,
@@ -67,6 +72,7 @@ class Radar extends WeatherDisplay {
 		} catch (error) {
 			console.error(`Failed to initialize radar: ${error.message}`);
 			this.clearRadarLayers();
+			this.clearNearbyMarkers();
 			this.timing.totalScreens = 0;
 			if (this.isEnabled) this.setStatus(STATUS.failed);
 		}
@@ -80,37 +86,8 @@ class Radar extends WeatherDisplay {
 			throw new Error('Radar map container not found');
 		}
 
-		this.map = window.L.map(mapElement, {
-			zoomControl: false,
-			dragging: false,
-			touchZoom: false,
-			scrollWheelZoom: false,
-			doubleClickZoom: false,
-			boxZoom: false,
-			keyboard: false,
-			tap: false,
-			attributionControl: false,
-			preferCanvas: true,
-		});
-
-		this.baseLayer = window.L.tileLayer(Radar.baseMapUrl, {
-			maxZoom: 10,
-			minZoom: 1,
-			crossOrigin: true,
-			className: 'radar-base-layer',
-		});
-
-		this.baseLayer.addTo(this.map);
-
-		this.boundaryLayer = window.L.tileLayer(Radar.boundaryMapUrl, {
-			maxZoom: 10,
-			minZoom: 1,
-			opacity: 0.6,
-			crossOrigin: true,
-			className: 'radar-boundary-layer',
-		});
-
-		this.boundaryLayer.addTo(this.map);
+		this.map = createMap(mapElement);
+		({ baseLayer: this.baseLayer, boundaryLayer: this.boundaryLayer } = addBaseLayers(this.map));
 	}
 
 	resetRadarLayers() {
@@ -162,23 +139,27 @@ class Radar extends WeatherDisplay {
 
 	updateLocationMarker() {
 		if (!this.map) return;
-
-		if (this.locationMarker && this.map.hasLayer(this.locationMarker)) {
-			this.map.removeLayer(this.locationMarker);
-		}
-
-		this.locationMarker = window.L.circleMarker([
+		this.locationMarker = setPrimaryLocationMarker(
+			this.map,
+			this.locationMarker,
 			this.weatherParameters.latitude,
 			this.weatherParameters.longitude,
-		], {
-			radius: 5,
-			color: '#000',
-			weight: 2,
-			fillColor: '#ff0',
-			fillOpacity: 1,
-			interactive: false,
-			className: 'location-marker',
-		}).addTo(this.map);
+		);
+	}
+
+	clearNearbyMarkers() {
+		this.nearbyMarkers = clearMarkers(this.map, this.nearbyMarkers);
+	}
+
+	async updateNearbyMarkers() {
+		if (!this.map) return;
+
+		this.clearNearbyMarkers();
+		this.nearbyMarkers = await loadNearbyObservationMarkers(this.map, {
+			latitude: this.weatherParameters.latitude,
+			longitude: this.weatherParameters.longitude,
+		});
+		this.nearbyMarkers.forEach((marker) => marker.addTo(this.map));
 	}
 
 	showFrame(screenIndex) {

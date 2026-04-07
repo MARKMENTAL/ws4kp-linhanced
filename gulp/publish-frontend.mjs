@@ -144,6 +144,7 @@ const copyDataFiles = () => src([
 	'datagenerators/output/travelcities.json',
 	'datagenerators/output/regionalcities.json',
 	'datagenerators/output/stations.json',
+	'datagenerators/output/radarcities.json',
 ]).pipe(dest('./dist/data'));
 
 const s3 = s3Upload({
