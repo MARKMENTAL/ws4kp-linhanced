@@ -2,7 +2,7 @@
 @use 'shared/_utils'as u;
 
 #extended-forecast-html.weather-display {
-	background-image: url('../images/backgrounds/2.png');
+	background-image: var(--theme-background-2);
 }
 
 .weather-display .main.extended-forecast {

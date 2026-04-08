@@ -19,6 +19,7 @@ import playlist from './src/playlist.mjs';
 import OVERRIDES from './src/overrides.mjs';
 import cache from './proxy/cache.mjs';
 import devTools from './src/com.chrome.devtools.mjs';
+import { discoverThemes } from './src/theme-discovery.mjs';
 
 const execAsync = promisify(exec);
 
@@ -90,6 +91,7 @@ const travelCities = JSON.parse(await readFile('./datagenerators/output/travelci
 const regionalCities = JSON.parse(await readFile('./datagenerators/output/regionalcities.json'));
 const stationInfo = JSON.parse(await readFile('./datagenerators/output/stations.json'));
 const radarCities = JSON.parse(await readFile('./datagenerators/output/radarcities.json'));
+const { themes, themeAssets } = await discoverThemes();
 
 const app = express();
 const port = process.env.WS4KP_PORT ?? 8080;
@@ -134,6 +136,8 @@ const renderIndex = (req, res, production = false) => {
 		production,
 		serverAvailable: !process.env?.STATIC, // Disable caching proxy server in static mode
 		version,
+		themes,
+		themeAssets,
 		OVERRIDES,
 		query: req.query,
 	});
@@ -266,6 +270,7 @@ if (!process.env?.STATIC) {
 	app.use('/rainviewer/', rainViewerProxy);
 	app.use('/arcgis-server/', arcGisServerProxy);
 	app.use('/arcgis-services/', arcGisServicesProxy);
+	app.use('/themes', express.static('./themes', staticOptions));
 
 	// Playlist route is available in server mode (not in static mode)
 	app.get('/playlist.json', playlist);
@@ -295,6 +300,7 @@ if (process.env?.DIST === '1') {
 	app.use('/scripts', express.static('./server/scripts', staticOptions));
 	app.use('/geoip', geoip);
 	app.use('/music', express.static('./server/music', staticOptions));
+	app.use('/themes', express.static('./dist/themes', staticOptions));
 
 	// render the EJS template in production mode (serve compressed files from dist directory)
 	app.get('/', (req, res) => { renderIndex(req, res, true); });
@@ -305,6 +311,7 @@ if (process.env?.DIST === '1') {
 	app.get('/index.html', index);
 	app.use('/geoip', geoip);
 	app.use('/resources', express.static('./server/scripts/modules'));
+	app.use('/themes', express.static('./themes', staticOptions));
 	app.get('/', index);
 	app.get('/.well-known/appspecific/com.chrome.devtools.json', devTools);
 	app.get('*name', express.static('./server', staticOptions));

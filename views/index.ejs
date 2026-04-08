@@ -31,6 +31,10 @@
     window.WS4KP_SERVER_AVAILABLE = true;
   </script>
   <% } %>
+  <script type="text/javascript">
+    window.WS4KP_THEMES = <%- JSON.stringify(themes ?? ['default']) %>;
+    window.WS4KP_THEME_ASSETS = <%- JSON.stringify(themeAssets ?? {}) %>;
+  </script>
 
   <% if (production) { %>
   <link rel="stylesheet" type="text/css" href="resources/ws.min.css?_=<%=production%>" />
@@ -179,6 +183,14 @@
 
     <div class="info">
       <a href="https://mentalnet.xyz/forgejo/markmental/ws4kp-linhanced">More information</a>
+    </div>
+    <div class="info">
+      <label for="theme-select">Theme</label>
+      <select id="theme-select" name="theme-select">
+        <% (themes ?? ['default']).forEach((themeName) => { %>
+          <option value="<%= themeName %>"><%= themeName === 'default' ? 'Default' : themeName %></option>
+        <% }) %>
+      </select>
     </div>
     <div class="media"></div>
 

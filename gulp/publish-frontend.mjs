@@ -19,6 +19,7 @@ import dartSass from 'sass';
 import gulpSass from 'gulp-sass';
 import sourceMaps from 'gulp-sourcemaps';
 import OVERRIDES from '../src/overrides.mjs';
+import { discoverThemes } from '../src/theme-discovery.mjs';
 
 // get cloudfront
 import reader from '../src/playlist-reader.mjs';
@@ -111,6 +112,7 @@ const htmlSources = [
 ];
 const packageJson = await readFile('package.json');
 let { version } = JSON.parse(packageJson);
+const { themes, themeAssets } = await discoverThemes();
 const previewVersion = async () => {
 	// generate a relatively unique timestamp for cache invalidation of the preview site
 	const now = new Date();
@@ -123,6 +125,8 @@ const compressHtml = async () => src(htmlSources)
 		production: version,
 		serverAvailable: false,
 		version,
+		themes,
+		themeAssets,
 		OVERRIDES,
 		query: {},
 	}))
@@ -136,6 +140,9 @@ const otherFiles = [
 	'server/music/**/*.mp3',
 ];
 const copyOtherFiles = () => src(otherFiles, { base: 'server/', encoding: false })
+	.pipe(dest('./dist'));
+
+const copyThemes = () => src('themes/**', { base: '.', encoding: false })
 	.pipe(dest('./dist'));
 
 // Copy JSON data files for static hosting
@@ -220,7 +227,7 @@ const logVersion = async () => {
 	log(`Version Published: ${version}`);
 };
 
-const buildDist = series(clean, parallel(buildJs, compressJsVendor, buildCss, compressHtml, copyOtherFiles, copyDataFiles, copyImageSources, buildPlaylist));
+const buildDist = series(clean, parallel(buildJs, compressJsVendor, buildCss, compressHtml, copyOtherFiles, copyThemes, copyDataFiles, copyImageSources, buildPlaylist));
 
 // upload_images could be in parallel with upload, but _images logs a lot and has little changes
 // by running upload last the majority of the changes will be at the bottom of the log for easy viewing
@@ -231,6 +238,7 @@ export default publishFrontend;
 
 export {
 	buildDist,
+	copyThemes,
 	invalidate,
 	stageFrontend,
 };

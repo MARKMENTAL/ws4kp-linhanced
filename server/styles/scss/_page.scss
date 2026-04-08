@@ -328,6 +328,11 @@ body {
 	font-display: swap;
 }
 
+:root {
+	--theme-background-1: url('../images/backgrounds/1.png');
+	--theme-background-2: url('../images/backgrounds/2.png');
+}
+
 #display {
 	font-family: "Star4000";
 	margin: 0 0 0 0;
@@ -339,7 +344,7 @@ body {
 	width: 640px;
 	height: 480px;
 	// overflow: hidden;
-	background-image: url(../images/backgrounds/1.png);
+	background-image: var(--theme-background-1);
 	transform-origin: 0 0;
 	background-repeat: no-repeat;
 }

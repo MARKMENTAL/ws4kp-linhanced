@@ -6,6 +6,7 @@ import {
 import { round2 } from './modules/utils/units.mjs';
 import { registerHiddenSetting } from './modules/share.mjs';
 import settings from './modules/settings.mjs';
+import './modules/utils/theme.mjs';
 import AutoComplete from './modules/autocomplete.mjs';
 import { loadAllData } from './modules/utils/data-loader.mjs';
 import { debugFlag } from './modules/utils/debug.mjs';
