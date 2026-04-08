@@ -41,6 +41,13 @@ const getRadarMetadataCached = async (stillWaiting) => {
 	return null;
 };
 
+const haveRadarFramesChanged = (currentHost, currentFrames, nextHost, nextFrames) => {
+	if (currentHost !== nextHost) return true;
+	if (currentFrames.length !== nextFrames.length) return true;
+
+	return currentFrames.some((frame, index) => frame?.path !== nextFrames[index]?.path || frame?.time !== nextFrames[index]?.time);
+};
+
 class Radar extends WeatherDisplay {
 	constructor(navId, elemId) {
 		super(navId, elemId, 'Local Radar');
@@ -86,11 +93,25 @@ class Radar extends WeatherDisplay {
 				return;
 			}
 
+			const currentFrameIndex = Math.max(0, Math.min(this.screenIndex < 0 ? this.mapFrames.length - 1 : this.screenIndex, frames.length - 1));
+			const framesChanged = haveRadarFramesChanged(this.radarHost, this.mapFrames, radarMetadata.host, frames);
 			this.radarHost = radarMetadata.host;
 			this.mapFrames = frames;
-			this.resetRadarLayers();
 			this.timing.delay = this.buildTiming();
 			this.calcNavTiming();
+
+			if (framesChanged) {
+				this.resetRadarLayers();
+			}
+
+			if (refresh) {
+				if (framesChanged && this.active) {
+					this.showFrame(currentFrameIndex);
+				}
+				this.setStatus(STATUS.loaded);
+				return;
+			}
+
 			this.resetNavBaseCount();
 			this.showFrame(this.mapFrames.length - 1);
 			this.setStatus(STATUS.loaded);
