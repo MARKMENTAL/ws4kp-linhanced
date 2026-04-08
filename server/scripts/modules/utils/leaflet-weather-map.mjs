@@ -2,6 +2,7 @@ import { safePromiseAll } from './fetch.mjs';
 import { loadData } from './data-loader.mjs';
 import { getSmallIconFromWmoCode } from '../icons.mjs';
 import { getOpenMeteoObservationSnapshot } from './weather.mjs';
+import { temperature } from './units.mjs';
 
 const BASE_MAP_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 const BOUNDARY_MAP_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
@@ -100,12 +101,13 @@ const selectNearbyCities = (map, sourceLocation, cities, options = {}) => {
 };
 
 const buildNearbyWeatherMarker = (city, observation) => {
+	const temperatureConverter = temperature();
 	const icon = getSmallIconFromWmoCode(observation.weatherCode, observation.isDay);
 	const markerHtml = `
 		<div class="nearby-weather-marker-inner">
 			<div class="city">${city.name}</div>
 			<div class="details">
-				<div class="temp">${Math.round(observation.temperature)}</div>
+				<div class="temp">${temperatureConverter(observation.temperature)}</div>
 				<img src="${icon}" alt="${city.name} weather" />
 			</div>
 		</div>`;
