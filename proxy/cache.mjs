@@ -19,16 +19,120 @@
  */
 
 import https from 'https';
+import { createHash } from 'crypto';
+import {
+	mkdir, readdir, readFile, rm, unlink, writeFile,
+} from 'fs/promises';
+import path from 'path';
 
 // Default timeout for upstream requests (matches client-side default)
 const DEFAULT_REQUEST_TIMEOUT = 15000;
+const CACHE_DIR = path.resolve('./cache');
+const STALE_TIME_LIMIT_MS = 3 * 60 * 60 * 1000;
+const PERSISTED_HOSTS = new Set([
+	'api.open-meteo.com',
+	'api.rainviewer.com',
+]);
+const HOST_FALLBACK_TTLS = {
+	'api.open-meteo.com': 10 * 60,
+	'api.rainviewer.com': 2 * 60,
+};
 
 class HttpCache {
 	constructor() {
 		this.cache = new Map();
 		this.inFlight = new Map();
 		this.cleanupInterval = null;
+		this.hydrationPromise = this.loadPersistedEntries();
 		this.startCleanup();
+	}
+
+	static hashKey(key) {
+		return createHash('sha256').update(key).digest('hex');
+	}
+
+	static getCacheFilePath(key) {
+		return path.join(CACHE_DIR, `${HttpCache.hashKey(key)}.json`);
+	}
+
+	static shouldPersist(url, options, response) {
+		if (options?.encoding === 'binary') return false;
+		if (typeof response?.data !== 'string') return false;
+
+		try {
+			const parsedUrl = new URL(url);
+			return PERSISTED_HOSTS.has(parsedUrl.hostname);
+		} catch {
+			return false;
+		}
+	}
+
+	static getHostFallbackTtl(url) {
+		try {
+			const parsedUrl = new URL(url);
+			return HOST_FALLBACK_TTLS[parsedUrl.hostname] ?? 0;
+		} catch {
+			return 0;
+		}
+	}
+
+	async ensureHydrated() {
+		await this.hydrationPromise;
+	}
+
+	async loadPersistedEntries() {
+		try {
+			await mkdir(CACHE_DIR, { recursive: true });
+			const files = await readdir(CACHE_DIR);
+			const now = Date.now();
+
+			await Promise.allSettled(files.filter((file) => file.endsWith('.json')).map(async (file) => {
+				const filePath = path.join(CACHE_DIR, file);
+				const raw = await readFile(filePath, 'utf8');
+				const parsed = JSON.parse(raw);
+				if (!parsed?.key || !parsed?.entry) {
+					await unlink(filePath);
+					return;
+				}
+
+				if (now > parsed.entry.expiry + STALE_TIME_LIMIT_MS) {
+					await unlink(filePath);
+					return;
+				}
+
+				this.cache.set(parsed.key, parsed.entry);
+			}));
+		} catch (error) {
+			console.warn(`⚠️ Cache load | Failed to hydrate disk cache: ${error.message}`);
+		}
+	}
+
+	static async persistEntry(key, entry) {
+		try {
+			await mkdir(CACHE_DIR, { recursive: true });
+			await writeFile(HttpCache.getCacheFilePath(key), JSON.stringify({ key, entry }));
+		} catch (error) {
+			console.warn(`⚠️ Cache save | Failed to persist cache entry ${key}: ${error.message}`);
+		}
+	}
+
+	static async deletePersistedEntry(key) {
+		try {
+			await unlink(HttpCache.getCacheFilePath(key));
+		} catch (error) {
+			if (error.code !== 'ENOENT') {
+				console.warn(`⚠️ Cache del  | Failed to delete cache entry ${key}: ${error.message}`);
+			}
+		}
+	}
+
+	static async clearPersistedEntries() {
+		try {
+			await rm(CACHE_DIR, { recursive: true, force: true });
+			await mkdir(CACHE_DIR, { recursive: true });
+		} catch (error) {
+			console.warn(`⚠️ Cache clear| Failed to clear disk cache: ${error.message}`);
+		}
 	}
 
 	// Parse cache-control header to extract s-maxage or max-age
@@ -66,15 +170,17 @@ class HttpCache {
 
 	// Generate cache key from request
 	static generateKey(req) {
-		const path = req.path || req.url || '/';
+		const requestPath = req.path || req.url || '/';
 		const url = req.url || req.path || '/';
 
 		// Since this cache is intended only by the frontend, we can use a simple URL-based key
-		return `${path}${url.includes('?') ? url.substring(url.indexOf('?')) : ''}`;
+		return `${requestPath}${url.includes('?') ? url.substring(url.indexOf('?')) : ''}`;
 	}
 
 	// High-level method to handle caching for HTTP proxies
 	async handleRequest(req, res, upstreamUrl, options = {}) {
+		await this.ensureHydrated();
+
 		// Check cache status
 		const cacheResult = this.getCachedRequest(req);
 
@@ -262,7 +368,7 @@ class HttpCache {
 					}
 
 					// Store in cache (pass original headers for cache logic, but store filtered headers)
-					this.storeCachedResponse(req, response, fullUrl, getRes.headers);
+					this.storeCachedResponse(req, response, fullUrl, getRes.headers, options);
 
 					// Send response to client
 					res.status(statusCode);
@@ -358,7 +464,7 @@ class HttpCache {
 		return { status: 'stale', data: cached };
 	}
 
-	storeCachedResponse(req, response, url, originalHeaders) {
+	storeCachedResponse(req, response, url, originalHeaders, options = {}) {
 		const key = HttpCache.generateKey(req);
 
 		const cacheControl = (originalHeaders || {})['cache-control'];
@@ -374,6 +480,13 @@ class HttpCache {
 			}
 		} else {
 			cacheType = 'explicit';
+		}
+
+		if (maxAge <= 0) {
+			maxAge = HttpCache.getHostFallbackTtl(url);
+			if (maxAge > 0) {
+				cacheType = 'override';
+			}
 		}
 
 		// Don't cache if still no valid max-age
@@ -396,6 +509,9 @@ class HttpCache {
 		};
 
 		this.cache.set(key, cached);
+		if (HttpCache.shouldPersist(url, options, response)) {
+			HttpCache.persistEntry(key, cached);
+		}
 
 		console.log(`🌐 Add      | ${url} (${cacheType} ${maxAge}s TTL, expires: ${new Date(cached.expiry).toISOString()})`);
 	}
@@ -426,19 +542,24 @@ class HttpCache {
 	startCleanup() {
 		if (this.cleanupInterval) return;
 
-		this.cleanupInterval = setInterval(() => {
+		this.cleanupInterval = setInterval(async () => {
 			const now = Date.now();
 			let removedCount = 0;
+			const deletePromises = [];
 
 			Array.from(this.cache.entries()).forEach(([key, cached]) => {
 				// Allow stale entries to persist for up to 3 hours before cleanup
 				// This gives us time to make conditional requests and potentially refresh them
-				const staleTimeLimit = 3 * 60 * 60 * 1000;
-				if (now > cached.expiry + staleTimeLimit) {
+				if (now > cached.expiry + STALE_TIME_LIMIT_MS) {
 					this.cache.delete(key);
+					deletePromises.push(HttpCache.deletePersistedEntry(key));
 					removedCount += 1;
 				}
 			});
+
+			if (deletePromises.length > 0) {
+				await Promise.allSettled(deletePromises);
+			}
 
 			if (removedCount > 0) {
 				console.log(`🧹 Clean    | Removed ${removedCount} stale entries (${this.cache.size} remaining)`);
@@ -471,15 +592,17 @@ class HttpCache {
 	// Clear all cache entries
 	clear() {
 		this.cache.clear();
+		HttpCache.clearPersistedEntries();
 		console.log('🗑️ Clear    | Cache cleared');
 	}
 
 	// Clear a specific cache entry by path
-	clearEntry(path) {
-		const key = path;
+	clearEntry(cachePath) {
+		const key = cachePath;
 		const deleted = this.cache.delete(key);
 		if (deleted) {
-			console.log(`🗑️ Clear    | ${path} removed from cache`);
+			HttpCache.deletePersistedEntry(key);
+			console.log(`🗑️ Clear    | ${cachePath} removed from cache`);
 			return true;
 		}
 		return false;
