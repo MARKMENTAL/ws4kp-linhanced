@@ -50,6 +50,14 @@ const rewriteUrl = (_url) => {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
 		url.pathname = `/rainviewer${url.pathname}`;
+	} else if (url.origin === 'https://server.arcgisonline.com') {
+		url.protocol = window.location.protocol;
+		url.host = window.location.host;
+		url.pathname = `/arcgis-server${url.pathname}`;
+	} else if (url.origin === 'https://services.arcgisonline.com') {
+		url.protocol = window.location.protocol;
+		url.host = window.location.host;
+		url.pathname = `/arcgis-services${url.pathname}`;
 	} else if (typeof OVERRIDES !== 'undefined' && OVERRIDES?.RADAR_HOST && url.origin === `https://${OVERRIDES.RADAR_HOST}`) {
 		// Handle override radar host
 		url.protocol = window.location.protocol;

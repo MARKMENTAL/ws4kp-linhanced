@@ -32,10 +32,18 @@ const STALE_TIME_LIMIT_MS = 3 * 60 * 60 * 1000;
 const PERSISTED_HOSTS = new Set([
 	'api.open-meteo.com',
 	'api.rainviewer.com',
+	'server.arcgisonline.com',
+	'services.arcgisonline.com',
+]);
+const BINARY_PERSISTED_HOSTS = new Set([
+	'server.arcgisonline.com',
+	'services.arcgisonline.com',
 ]);
 const HOST_FALLBACK_TTLS = {
 	'api.open-meteo.com': 10 * 60,
 	'api.rainviewer.com': 2 * 60,
+	'server.arcgisonline.com': 7 * 24 * 60 * 60,
+	'services.arcgisonline.com': 7 * 24 * 60 * 60,
 };
 
 class HttpCache {
@@ -55,16 +63,30 @@ class HttpCache {
 		return path.join(CACHE_DIR, `${HttpCache.hashKey(key)}.json`);
 	}
 
-	static shouldPersist(url, options, response) {
-		if (options?.encoding === 'binary') return false;
-		if (typeof response?.data !== 'string') return false;
+	static getCacheBodyFilePath(key) {
+		return path.join(CACHE_DIR, `${HttpCache.hashKey(key)}.bin`);
+	}
 
+	static getPersistedHost(url) {
 		try {
 			const parsedUrl = new URL(url);
-			return PERSISTED_HOSTS.has(parsedUrl.hostname);
+			return parsedUrl.hostname;
 		} catch {
+			return null;
+		}
+	}
+
+	static shouldPersist(url, options, response) {
+		const host = HttpCache.getPersistedHost(url);
+		if (!host || !PERSISTED_HOSTS.has(host)) {
 			return false;
 		}
+
+		if (options?.encoding === 'binary') {
+			return BINARY_PERSISTED_HOSTS.has(host) && Buffer.isBuffer(response?.data);
+		}
+
+		return typeof response?.data === 'string';
 	}
 
 	static getHostFallbackTtl(url) {
@@ -96,8 +118,15 @@ class HttpCache {
 				}
 
 				if (now > parsed.entry.expiry + STALE_TIME_LIMIT_MS) {
+					if (parsed.entry.binaryBody === true) {
+						await unlink(HttpCache.getCacheBodyFilePath(parsed.key)).catch(() => null);
+					}
 					await unlink(filePath);
 					return;
+				}
+
+				if (parsed.entry.binaryBody === true) {
+					parsed.entry.data = await readFile(HttpCache.getCacheBodyFilePath(parsed.key));
 				}
 
 				this.cache.set(parsed.key, parsed.entry);
@@ -110,6 +139,18 @@ class HttpCache {
 	static async persistEntry(key, entry) {
 		try {
 			await mkdir(CACHE_DIR, { recursive: true });
+
+			if (Buffer.isBuffer(entry.data)) {
+				const metadata = {
+					...entry,
+					data: undefined,
+					binaryBody: true,
+				};
+				await writeFile(HttpCache.getCacheBodyFilePath(key), entry.data);
+				await writeFile(HttpCache.getCacheFilePath(key), JSON.stringify({ key, entry: metadata }));
+				return;
+			}
+
 			await writeFile(HttpCache.getCacheFilePath(key), JSON.stringify({ key, entry }));
 		} catch (error) {
 			console.warn(`⚠️ Cache save | Failed to persist cache entry ${key}: ${error.message}`);
@@ -118,6 +159,7 @@ class HttpCache {
 
 	static async deletePersistedEntry(key) {
 		try {
+			await unlink(HttpCache.getCacheBodyFilePath(key)).catch(() => null);
 			await unlink(HttpCache.getCacheFilePath(key));
 		} catch (error) {
 			if (error.code !== 'ENOENT') {

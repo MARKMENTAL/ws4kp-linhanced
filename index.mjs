@@ -5,7 +5,15 @@ import { readFile } from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import {
-	weatherProxy, radarProxy, outlookProxy, mesonetProxy, forecastProxy, openMeteoProxy, rainViewerProxy,
+	weatherProxy,
+	radarProxy,
+	outlookProxy,
+	mesonetProxy,
+	forecastProxy,
+	openMeteoProxy,
+	rainViewerProxy,
+	arcGisServerProxy,
+	arcGisServicesProxy,
 } from './proxy/handlers.mjs';
 import playlist from './src/playlist.mjs';
 import OVERRIDES from './src/overrides.mjs';
@@ -256,6 +264,8 @@ if (!process.env?.STATIC) {
 	app.use('/forecast/', forecastProxy);
 	app.use('/open-meteo/', openMeteoProxy);
 	app.use('/rainviewer/', rainViewerProxy);
+	app.use('/arcgis-server/', arcGisServerProxy);
+	app.use('/arcgis-services/', arcGisServicesProxy);
 
 	// Playlist route is available in server mode (not in static mode)
 	app.get('/playlist.json', playlist);

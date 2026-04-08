@@ -64,3 +64,19 @@ export const rainViewerProxy = async (req, res) => {
 		skipParams: ['u'],
 	});
 };
+
+export const arcGisServerProxy = async (req, res) => {
+	await cache.handleRequest(req, res, 'https://server.arcgisonline.com', {
+		serviceName: 'ArcGIS Server',
+		skipParams: ['u'],
+		encoding: 'binary',
+	});
+};
+
+export const arcGisServicesProxy = async (req, res) => {
+	await cache.handleRequest(req, res, 'https://services.arcgisonline.com', {
+		serviceName: 'ArcGIS Services',
+		skipParams: ['u'],
+		encoding: 'binary',
+	});
+};

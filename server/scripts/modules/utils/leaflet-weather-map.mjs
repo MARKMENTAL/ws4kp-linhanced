@@ -4,8 +4,12 @@ import { getSmallIconFromWmoCode } from '../icons.mjs';
 import { getOpenMeteoObservationSnapshot } from './weather.mjs';
 import { temperature } from './units.mjs';
 
-const BASE_MAP_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
-const BOUNDARY_MAP_URL = 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+const getBaseMapUrl = () => (window.WS4KP_SERVER_AVAILABLE
+	? '/arcgis-server/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+	: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}');
+const getBoundaryMapUrl = () => (window.WS4KP_SERVER_AVAILABLE
+	? '/arcgis-services/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
+	: 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
 const DEFAULT_MAX_NEARBY_MARKERS = 7;
 const MIN_CITY_DISTANCE_METERS = 25000;
 const MIN_MARKER_PIXEL_DISTANCE = 85;
@@ -26,14 +30,14 @@ const createMap = (mapElement) => window.L.map(mapElement, {
 });
 
 const addBaseLayers = (map) => {
-	const baseLayer = window.L.tileLayer(BASE_MAP_URL, {
+	const baseLayer = window.L.tileLayer(getBaseMapUrl(), {
 		maxZoom: 10,
 		minZoom: 1,
 		crossOrigin: true,
 		className: 'radar-base-layer',
 	}).addTo(map);
 
-	const boundaryLayer = window.L.tileLayer(BOUNDARY_MAP_URL, {
+	const boundaryLayer = window.L.tileLayer(getBoundaryMapUrl(), {
 		maxZoom: 10,
 		minZoom: 1,
 		opacity: 0.6,
