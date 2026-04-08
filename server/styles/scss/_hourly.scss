@@ -44,12 +44,7 @@
 		.hourly-lines {
 			min-height: 338px;
 			padding-top: 10px;
-
-			background: repeating-linear-gradient(0deg, c.$gradient-main-background-2 0px,
-					c.$gradient-main-background-1 136px,
-					c.$gradient-main-background-1 202px,
-					c.$gradient-main-background-2 338px,
-				);
+			background: #0b0b39;
 
 			.hourly-row {
 				font-family: 'Star4000 Large';
