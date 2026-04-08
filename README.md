@@ -61,6 +61,7 @@ From a learning standpoint, this codebase makes use of a lot of different method
 * Separation between API code and user interface code
 * Use of a modern date parsing library [luxon](https://moment.github.io/luxon/)
 * Server-side proxy caching plus browser/static asset caching
+* [fastfetch](https://github.com/fastfetch-cli/fastfetch) for the Linux-oriented Server Observations display
 * Very straight-forward hand written HTML
 * Build system integration (Gulp, Webpack) to reduce the number of scripts that need to be loaded
 * Hand written CSS made easier to mange with SASS
