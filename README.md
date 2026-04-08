@@ -29,6 +29,18 @@ This fork is focused on:
 * global radar and global regional observations on the newer map stack
 * pragmatic feature additions instead of broad platform expansion
 
+## Themes
+
+`ws4kp-linhanced` supports live asset theme swapping from the main page. Themes are discovered automatically from the `themes/` directory and can be changed from the `Theme` selector under the `More information` link without reloading the page.
+
+Current themes include:
+
+* `Default`: the standard WeatherStar 4000+ asset set.
+* `oceanview`: based on the Oceanview Weather Channel presentation from the Eventide Media Center analog horror series.
+* `slackware`: based on the Oceanview theme, but with the Slackware Linux badge/logo treatment.
+
+At the moment, theming covers the major background assets and the corner logo. Additional theme asset overrides can be added by placing matching files in `themes/<theme-name>/`.
+
 ## What's your motivation
 
 Nostalgia, Linux affinity, and an interest in keeping a practical retro weather display alive without turning it into a sprawling platform.

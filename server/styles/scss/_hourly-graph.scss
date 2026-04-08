@@ -2,7 +2,7 @@
 @use 'shared/_utils'as u;
 
 #hourly-graph-html {
-	background-image: url(../images/backgrounds/1-chart.png);
+	background-image: var(--theme-background-1-chart);
 
 	.header {
 		.right {

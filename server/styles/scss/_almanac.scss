@@ -2,7 +2,7 @@
 @use 'shared/_utils' as u;
 
 #almanac-html.weather-display {
-	background-image: url('../images/backgrounds/3.png');
+	background-image: var(--theme-background-3);
 }
 
 .weather-display .main.almanac {

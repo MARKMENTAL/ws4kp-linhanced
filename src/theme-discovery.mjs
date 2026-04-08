@@ -13,7 +13,11 @@ const discoverThemes = async () => {
 			const files = await readdir(path.join(THEMES_DIR, themeName));
 			themeAssets[themeName] = {
 				background1: files.includes('1.png'),
+				background1Chart: files.includes('1-chart.png'),
 				background2: files.includes('2.png'),
+				background3: files.includes('3.png'),
+				background4: files.includes('4.png'),
+				background5: files.includes('5.png'),
 				logoCorner: files.includes('logo-corner.png'),
 			};
 		}));

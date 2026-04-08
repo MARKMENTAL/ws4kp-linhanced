@@ -2,7 +2,7 @@
 @use 'shared/_utils'as u;
 
 #regional-forecast-html.weather-display {
-	background-image: url('../images/backgrounds/5.png');
+	background-image: var(--theme-background-5);
 }
 
 .weather-display .main.regional-forecast {
