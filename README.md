@@ -1,34 +1,54 @@
 ![Weatherstar 4000+ Current Conditions](https://github.com/netbymatt/ws4kp/blob/main/server/images/social/1200x600.png)
 
-# WeatherStar 4000+
+# ws4kp-linhanced
 
-A live version of this project is available at https://weatherstar.netbymatt.com
+`ws4kp-linhanced` is a Linux-focused fork of [`netbymatt/ws4kp`](https://github.com/netbymatt/ws4kp) by `markmental`.
 
 ## About
 
-This project aims to bring back the feel of the 90s with a weather forecast that has the look and feel of The Weather Channel at that time but available in a modern way. This is by no means intended to be a perfect emulation of the WeatherStar 4000, the hardware that produced those wonderful blue and orange graphics you saw during the local forecast on The Weather Channel. If you would like a much more accurate project please see the [WS4000 Simulator](http://www.taiganet.com/). Instead, this project intends to create a simple to use interface with minimal configuration fuss. Some changes have been made to the screens available because either more or less forecast information is available today than was in the 90s. Most of these changes are captured in sections below.
+This fork keeps the classic WeatherStar-style experience and stable base architecture from the original `ws4kp` project, while selectively integrating international weather support and other practical improvements. It is not intended to be a perfect hardware emulation of the WeatherStar 4000. If you want a more exact recreation of the original hardware behavior, see the [WS4000 Simulator](http://www.taiganet.com/).
+
+This fork also explicitly adopts Slackware Linux `weatherstar4k` branding as part of its mission. The goal is not broad platform neutrality. The goal is a lean, self-hostable, Linux-oriented weatherstar fork with a strong visual identity and a codebase that stays practical to maintain.
+
+## About This Fork
+
+This project is based on:
+
+* [`netbymatt/ws4kp`](https://github.com/netbymatt/ws4kp) for the core WeatherStar implementation and the more stable upstream foundation.
+* [`mwood77/ws4kp-international`](https://github.com/mwood77/ws4kp-international) for the Open-Meteo international weather direction and some global map ideas.
+
+This fork intentionally diverges from `ws4kp-international`. That project proved out the international weather concept, but this fork aims to keep a narrower scope and avoid the feature creep that can make ongoing work harder. The original `ws4kp` codebase provided a better base for that approach, so this fork builds from there and pulls in only the parts that fit.
+
+## Current Direction
+
+This fork is focused on:
+
+* preserving the classic WeatherStar feel while staying maintainable
+* Linux-first identity and presentation
+* Open-Meteo-based international weather support for the core forecast screens
+* global radar and global regional observations on the newer map stack
+* pragmatic feature additions instead of broad platform expansion
 
 ## What's your motivation
 
-Nostalgia. And I enjoy following the weather, especially severe storms.
-
-It's also a creative outlet for me and keeps my programming skills honed for when I need them for my day job.
+Nostalgia, Linux affinity, and an interest in keeping a practical retro weather display alive without turning it into a sprawling platform.
 
 ### Included technology
-I've kept this open source, well commented, and made it as library-free as possible to help others interested in programming be able to jump right in and start working with the code.
+This fork still keeps the original project's straightforward architecture and relatively low dependency surface so it stays approachable to modify.
 
-From a learning standpoint, this codebase make use of a lot of different methods and technologies common on the internet including:
+From a learning standpoint, this codebase makes use of a lot of different methods and technologies common on the internet including:
 
-* The https://api.weather.gov REST API. ([documentation](https://www.weather.gov/documentation/services-web-api)).
+* The [Open-Meteo API](https://open-meteo.com/) for core forecast data.
+* NOAA APIs and products where legacy US-only displays still require them.
 * ES 6 functionality
 	* Arrow functions
 	* Promises
-	* Async/await and parallel loading of all forecast resources
+	* Async/await and parallel loading of forecast resources
 	* Classes and extensions
 	* Javascript modules
 * Separation between API code and user interface code
 * Use of a modern date parsing library [luxon](https://moment.github.io/luxon/)
-* Practical API rates and static asset caching
+* Server-side proxy caching plus browser/static asset caching
 * Very straight-forward hand written HTML
 * Build system integration (Gulp, Webpack) to reduce the number of scripts that need to be loaded
 * Hand written CSS made easier to mange with SASS
@@ -38,33 +58,33 @@ From a learning standpoint, this codebase make use of a lot of different methods
 
 Ensure you have Node installed.
 ```bash
-git clone https://github.com/netbymatt/ws4kp.git
-cd ws4kp
+git clone <your fork url here>
+cd ws4kp-linhanced
 npm install
 npm start
 ```
 
 Open your browser and navigate to https://localhost:8080
 
-## Does WeatherStar 4000+ work outside of the USA?
+## Does ws4kp-linhanced work outside of the USA?
 
-Yes for the core forecast screens. The main weather flow now uses Open-Meteo so search, current conditions, hourly, local forecast, extended forecast, and almanac work internationally.
+Yes for the core forecast screens, and more than that.
+
+The main weather flow now uses Open-Meteo, so search, current conditions, hourly, local forecast, extended forecast, almanac, travel forecast, radar, and regional observations all work internationally.
 
 Some legacy displays still rely on [NOAA's Weather API](https://www.weather.gov/documentation/services-web-api) and remain available only for United States locations for now:
 
 * Hazards
-* Latest Observations
-* Regional Forecast
-* Travel Forecast
 * SPC Outlook
-* Local Radar
+
+This fork no longer treats `ws4kp-international` as a drop-in upstream. Instead, it selectively incorporates the Open-Meteo international weather work while keeping a leaner feature set and a more stable base.
 
 Earlier international work on this idea was explored in a fork created by [@mwood77](https://github.com/mwood77):
 - [`ws4kp-international`](https://github.com/mwood77/ws4kp-international)
 
 ## Deployment Modes
 
-WeatherStar 4000+ supports two deployment modes:
+`ws4kp-linhanced` supports two deployment modes:
 
 ### Server Deployment (Recommended)
 
@@ -80,7 +100,7 @@ WeatherStar 4000+ supports two deployment modes:
 * Browser-based caching
 * Used by: static file hosting and default `Dockerfile`
 
-## Other methods to run Ws4kp
+## Other methods to run ws4kp-linhanced
 
 ### Development Mode (individual JS files, easier debugging)
 ```bash
@@ -104,7 +124,7 @@ npm run build
 STATIC=1 DIST=1 npm start
 ```
 
-For all modes, access WeatherStar by going to: http://localhost:8080/
+For all modes, access `ws4kp-linhanced` by going to: http://localhost:8080/
 
 ### Key Differences
 
@@ -185,16 +205,15 @@ STATIC=1 DIST=1 npm start   # Use Express to serve (minimized) production files
 
 ## What's different
 
-I've made several changes to this Weather Star 4000 simulation compared to the original hardware unit and the code that this was forked from.
+This fork has diverged significantly from upstream in a few important ways:
 
-* Radar displays the timestamp of the image.
-* A new hour-by-hour graph of the temperature, cloud cover and precipitation chances for the next 24 hours.
-* A new hourly forecast display for the next 24 hours is available, and is shown in the style of the travel cities forecast. (off by default because it duplicates the hourly graph)
-* The SPC Outlook is shown in the style of the old air quality screen. This shows the probability of severe weather over the next 3 days at your location. SPC outlook only displays if you're within one of the highlight areas over the next 3 day. You can view the [maps](https://www.weather.gov/crh/outlooks) and pick a location within one of the risk categories to see if the screen is working for you.
-* The "Local Forecast" and "Extended Forecast" provide several additional days of information compared to the original format in the 90s.
-* The original music has been replaced. More info in [Music](#music).
-* Marine forecast (tides) is not available as it is not reliably part of the new API.
-* "Flavors" are not present in this simulation. Flavors refer to the order of the weather information that was shown on the original units. Instead, the order of the displays has been fixed and a checkboxes can be used to turn on and off individual displays. The travel forecast has been defaulted to off so only local information shows for new users.
+* Core weather and forecast screens now use Open-Meteo instead of being tied entirely to weather.gov.
+* Travel Forecast has been rebuilt on region buckets with a global fallback instead of remaining a US-only NOAA-driven screen.
+* Local Radar now uses global RainViewer radar imagery on top of a cached world basemap instead of the older US-only radar path.
+* Regional Forecast has been temporarily replaced by a global `Regional Observations` map display using nearby city observations on the new map stack.
+* Latest Observations has been removed.
+* Some NOAA-based displays are still retained where there is no equivalent replacement yet, especially Hazards and SPC Outlook.
+* This fork explicitly embraces Linux and Slackware-flavored `weatherstar4k` branding instead of aiming for broad neutral presentation.
 
 ## Sharing a permalink (bookmarking)
 Selected displays, the forecast city and widescreen setting are sticky from one session to the next. However if you would like to share your exact configuration or bookmark it, click the "Copy Permalink" (or get "Get Permalink") near the bottom of the page. A URL will be copied to your clipboard with all of you selected displays and location (or copy it from the page if your browser doesn't support clipboard transfers directly). You can then share this link or add it to your bookmarks.
