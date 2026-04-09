@@ -17,7 +17,6 @@ import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-clo
 import log from 'fancy-log';
 import dartSass from 'sass';
 import gulpSass from 'gulp-sass';
-import sourceMaps from 'gulp-sourcemaps';
 import OVERRIDES from '../src/overrides.mjs';
 import { discoverThemes } from '../src/theme-discovery.mjs';
 
@@ -100,10 +99,8 @@ const cssSources = [
 	'server/styles/scss/**/*.scss',
 ];
 const buildCss = () => src(cssSources)
-	.pipe(sourceMaps.init())
 	.pipe(sass({ style: 'compressed' }).on('error', sass.logError))
 	.pipe(rename({ suffix: '.min' }))
-	.pipe(sourceMaps.write('./'))
 	.pipe(dest(RESOURCES_PATH))
 	.pipe(dest('./server/styles'));
 
