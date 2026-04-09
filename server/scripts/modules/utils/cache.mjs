@@ -1,4 +1,5 @@
 import { rewriteUrl } from './url-rewrite.mjs';
+import { withBasePath } from './base-path.mjs';
 
 // Clear cache utility for client-side use
 const clearCacheEntry = async (url, baseUrl = '') => {
@@ -15,7 +16,7 @@ const clearCacheEntry = async (url, baseUrl = '') => {
 		}
 
 		// Call the cache clear endpoint
-		const fetchUrl = baseUrl ? `${baseUrl}/cache${cachePath}` : `/cache${cachePath}`;
+		const fetchUrl = baseUrl ? `${baseUrl}/cache${cachePath}` : withBasePath(`cache${cachePath}`);
 		const response = await fetch(fetchUrl, {
 			method: 'DELETE',
 		});

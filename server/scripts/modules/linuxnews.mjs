@@ -3,6 +3,7 @@ import STATUS from './status.mjs';
 import WeatherDisplay from './weatherdisplay.mjs';
 import { registerDisplay } from './navigation.mjs';
 import { debugFlag } from './utils/debug.mjs';
+import { withBasePath } from './utils/base-path.mjs';
 
 const STORIES_PER_PAGE = 2;
 const PAGE_DURATION_MS = 9000;
@@ -17,7 +18,7 @@ class LinuxNews extends WeatherDisplay {
 		if (!super.getData(weatherParameters, refresh)) return;
 
 		try {
-			const response = await safeJson('/api/linux-news', {
+			const response = await safeJson(withBasePath('api/linux-news'), {
 				retryCount: 0,
 			});
 

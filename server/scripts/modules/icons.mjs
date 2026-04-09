@@ -1,6 +1,7 @@
 import largeIcon from './icons/icons-large.mjs';
 import smallIcon from './icons/icons-small.mjs';
 import hourlyIcon from './icons/icons-hourly.mjs';
+import { withBasePath } from './utils/base-path.mjs';
 
 const getWeatherGovTokenFromWmoCode = (code) => {
 	switch (Number(code)) {
@@ -44,7 +45,7 @@ const getWeatherGovTokenFromWmoCode = (code) => {
 	}
 };
 
-const buildSyntheticIconUrl = (code, isDaytime = true) => `/icons/land/${isDaytime ? 'day' : 'night'}/${getWeatherGovTokenFromWmoCode(code)}`;
+const buildSyntheticIconUrl = (code, isDaytime = true) => withBasePath(`icons/land/${isDaytime ? 'day' : 'night'}/${getWeatherGovTokenFromWmoCode(code)}`);
 
 const getLargeIconFromWmoCode = (code, isDaytime = true) => largeIcon(buildSyntheticIconUrl(code, isDaytime), !isDaytime);
 const getSmallIconFromWmoCode = (code, isDaytime = true) => smallIcon(buildSyntheticIconUrl(code, isDaytime), !isDaytime);

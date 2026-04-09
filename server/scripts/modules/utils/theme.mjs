@@ -1,12 +1,15 @@
+import { withBasePath } from './base-path.mjs';
+
 const THEME_STORAGE_KEY = 'settings-theme-select';
 const DEFAULT_THEME = 'default';
+
 const BUILTIN_ASSETS = {
-	background1: '../images/backgrounds/1.png',
-	background1Chart: '../images/backgrounds/1-chart.png',
-	background2: '../images/backgrounds/2.png',
-	background3: '../images/backgrounds/3.png',
-	background4: '../images/backgrounds/4.png',
-	background5: '../images/backgrounds/5.png',
+	background1: 'images/backgrounds/1.png',
+	background1Chart: 'images/backgrounds/1-chart.png',
+	background2: 'images/backgrounds/2.png',
+	background3: 'images/backgrounds/3.png',
+	background4: 'images/backgrounds/4.png',
+	background5: 'images/backgrounds/5.png',
 	logoCorner: 'images/logos/logo-corner.png',
 };
 
@@ -20,33 +23,33 @@ const getStoredTheme = () => {
 
 const getThemeAssetUrl = (themeName, assetKey) => {
 	if (themeName === DEFAULT_THEME) {
-		return BUILTIN_ASSETS[assetKey];
+		return withBasePath(BUILTIN_ASSETS[assetKey]);
 	}
 
 	const themeAssetAvailability = getThemeAssets()[themeName] ?? {};
 	if (!themeAssetAvailability[assetKey]) {
-		return BUILTIN_ASSETS[assetKey];
+		return withBasePath(BUILTIN_ASSETS[assetKey]);
 	}
 
 		switch (assetKey) {
 		case 'background1':
-			return `../themes/${themeName}/1.png`;
+			return withBasePath(`themes/${themeName}/1.png`);
 		case 'background1Chart':
-			return `../themes/${themeName}/1-chart.png`;
+			return withBasePath(`themes/${themeName}/1-chart.png`);
 		case 'background2':
-			return `../themes/${themeName}/2.png`;
+			return withBasePath(`themes/${themeName}/2.png`);
 		case 'background3':
-			return `../themes/${themeName}/3.png`;
+			return withBasePath(`themes/${themeName}/3.png`);
 		case 'background4':
-			return `../themes/${themeName}/4.png`;
+			return withBasePath(`themes/${themeName}/4.png`);
 		case 'background5':
-			return `../themes/${themeName}/5.png`;
+			return withBasePath(`themes/${themeName}/5.png`);
 		case 'logoCorner':
-			return `themes/${themeName}/logo-corner.png`;
+			return withBasePath(`themes/${themeName}/logo-corner.png`);
 		default:
-			return BUILTIN_ASSETS[assetKey];
-	}
-};
+			return withBasePath(BUILTIN_ASSETS[assetKey]);
+		}
+	};
 
 const applyTheme = (themeName) => {
 	const selectedTheme = getAvailableThemes().includes(themeName) ? themeName : DEFAULT_THEME;

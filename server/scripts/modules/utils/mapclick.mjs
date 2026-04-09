@@ -11,6 +11,7 @@
 
 import { safeJson } from './fetch.mjs';
 import { debugFlag } from './debug.mjs';
+import { withBasePath } from './base-path.mjs';
 
 /**
  * Parse MapClick date format to JavaScript Date
@@ -178,7 +179,7 @@ const convertMapClickIcon = (weatherImage) => {
 		return null;
 	}
 
-	return `/icons/land/${timeOfDay}/${condition}?size=medium`;
+	return withBasePath(`icons/land/${timeOfDay}/${condition}?size=medium`);
 };
 
 /**

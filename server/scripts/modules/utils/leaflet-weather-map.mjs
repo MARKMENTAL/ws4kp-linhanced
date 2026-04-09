@@ -3,12 +3,13 @@ import { loadData } from './data-loader.mjs';
 import { getSmallIconFromWmoCode } from '../icons.mjs';
 import { getOpenMeteoObservationSnapshot } from './weather.mjs';
 import { temperature } from './units.mjs';
+import { withBasePath } from './base-path.mjs';
 
 const getBaseMapUrl = () => (window.WS4KP_SERVER_AVAILABLE
-	? '/arcgis-server/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+	? withBasePath('arcgis-server/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}')
 	: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}');
 const getBoundaryMapUrl = () => (window.WS4KP_SERVER_AVAILABLE
-	? '/arcgis-services/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
+	? withBasePath('arcgis-services/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}')
 	: 'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
 const DEFAULT_MAX_NEARBY_MARKERS = 7;
 const MIN_CITY_DISTANCE_METERS = 25000;

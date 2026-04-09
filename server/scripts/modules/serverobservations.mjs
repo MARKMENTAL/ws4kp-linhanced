@@ -4,6 +4,7 @@ import STATUS from './status.mjs';
 import WeatherDisplay from './weatherdisplay.mjs';
 import { registerDisplay } from './navigation.mjs';
 import { debugFlag } from './utils/debug.mjs';
+import { withBasePath } from './utils/base-path.mjs';
 
 const LINES_PER_PAGE = 4;
 const PAGE_DURATION_MS = 7000;
@@ -19,7 +20,7 @@ class ServerObservations extends WeatherDisplay {
 
 		try {
 			// Fetch server info from the API
-			const response = await safeJson('/api/server-info', {
+			const response = await safeJson(withBasePath('api/server-info'), {
 				retryCount: 0,
 			});
 

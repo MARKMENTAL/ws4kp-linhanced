@@ -1,5 +1,7 @@
 // Data loader utility for fetching JSON data with cache-busting
 
+import { withBasePath } from './base-path.mjs';
+
 let dataCache = {};
 
 // Load data with version-based cache busting
@@ -9,7 +11,7 @@ const loadData = async (dataType, version = '') => {
 	}
 
 	try {
-		const url = `/data/${dataType}.json${version ? `?_=${version}` : ''}`;
+		const url = withBasePath(`data/${dataType}.json${version ? `?_=${version}` : ''}`);
 		const response = await fetch(url);
 
 		if (!response.ok) {

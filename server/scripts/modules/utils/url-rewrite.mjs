@@ -1,4 +1,6 @@
 // rewrite URLs to use local proxy server
+import { withBasePath } from './base-path.mjs';
+
 const rewriteUrl = (_url) => {
 	if (!_url) {
 		throw new Error(`rewriteUrl called with invalid argument: '${_url}' (${typeof _url})`);
@@ -25,44 +27,44 @@ const rewriteUrl = (_url) => {
 	if (url.origin === 'https://api.weather.gov') {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
-		url.pathname = `/api${url.pathname}`;
+		url.pathname = withBasePath(`api${url.pathname}`);
 	} else if (url.origin === 'https://forecast.weather.gov') {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
-		url.pathname = `/forecast${url.pathname}`;
+		url.pathname = withBasePath(`forecast${url.pathname}`);
 	} else if (url.origin === 'https://www.spc.noaa.gov') {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
-		url.pathname = `/spc${url.pathname}`;
+		url.pathname = withBasePath(`spc${url.pathname}`);
 	} else if (url.origin === 'https://radar.weather.gov') {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
-		url.pathname = `/radar${url.pathname}`;
+		url.pathname = withBasePath(`radar${url.pathname}`);
 	} else if (url.origin === 'https://mesonet.agron.iastate.edu') {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
-		url.pathname = `/mesonet${url.pathname}`;
+		url.pathname = withBasePath(`mesonet${url.pathname}`);
 	} else if (url.origin === 'https://api.open-meteo.com') {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
-		url.pathname = `/open-meteo${url.pathname}`;
+		url.pathname = withBasePath(`open-meteo${url.pathname}`);
 	} else if (url.origin === 'https://api.rainviewer.com') {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
-		url.pathname = `/rainviewer${url.pathname}`;
+		url.pathname = withBasePath(`rainviewer${url.pathname}`);
 	} else if (url.origin === 'https://server.arcgisonline.com') {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
-		url.pathname = `/arcgis-server${url.pathname}`;
+		url.pathname = withBasePath(`arcgis-server${url.pathname}`);
 	} else if (url.origin === 'https://services.arcgisonline.com') {
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
-		url.pathname = `/arcgis-services${url.pathname}`;
+		url.pathname = withBasePath(`arcgis-services${url.pathname}`);
 	} else if (typeof OVERRIDES !== 'undefined' && OVERRIDES?.RADAR_HOST && url.origin === `https://${OVERRIDES.RADAR_HOST}`) {
 		// Handle override radar host
 		url.protocol = window.location.protocol;
 		url.host = window.location.host;
-		url.pathname = `/mesonet${url.pathname}`;
+		url.pathname = withBasePath(`mesonet${url.pathname}`);
 	}
 
 	return url;
