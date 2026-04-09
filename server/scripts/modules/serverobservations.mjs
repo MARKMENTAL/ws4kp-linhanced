@@ -8,6 +8,7 @@ import { withBasePath } from './utils/base-path.mjs';
 
 const LINES_PER_PAGE = 4;
 const PAGE_DURATION_MS = 7000;
+const ALLOWED_KEYS = new Set(['OS', 'Kernel', 'Uptime', 'CPU', 'GPU', 'Memory', 'Disk']);
 
 const parseServerObservationLine = (line) => {
 	const trimmed = line.trim();
@@ -19,7 +20,7 @@ const parseServerObservationLine = (line) => {
 		if (separatorIndex > 0) {
 			const key = trimmed.slice(0, separatorIndex).trim();
 			const value = trimmed.slice(separatorIndex + separator.length).trim();
-			if (key && value) {
+			if (key && value && ALLOWED_KEYS.has(key)) {
 				return { key, value };
 			}
 		}
