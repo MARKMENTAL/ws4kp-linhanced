@@ -9,6 +9,26 @@ import { withBasePath } from './utils/base-path.mjs';
 const LINES_PER_PAGE = 4;
 const PAGE_DURATION_MS = 7000;
 
+const parseServerObservationLine = (line) => {
+	const trimmed = line.trim();
+	if (!trimmed) return null;
+
+	const separators = [' == ', ': '];
+	const parsedLine = separators.map((separator) => {
+		const separatorIndex = trimmed.indexOf(separator);
+		if (separatorIndex > 0) {
+			const key = trimmed.slice(0, separatorIndex).trim();
+			const value = trimmed.slice(separatorIndex + separator.length).trim();
+			if (key && value) {
+				return { key, value };
+			}
+		}
+		return null;
+	}).find((entry) => entry);
+
+	return parsedLine ?? null;
+};
+
 class ServerObservations extends WeatherDisplay {
 	constructor(navId, elemId) {
 		super(navId, elemId, 'Server Observations', true);
@@ -51,14 +71,9 @@ class ServerObservations extends WeatherDisplay {
 		const container = this.elem.querySelector('.container');
 
 		// Split the fastfetch output into lines
-		const lines = this.data.split('\n');
-
-		// Filter to show only key system info lines (contain "==")
-		const infoLines = lines.filter((line) => {
-			const trimmed = line.trim();
-			// Only keep lines that have the "Key == Value" format
-			return trimmed && trimmed.includes(' == ');
-		});
+		const infoLines = this.data.split('\n')
+			.map((line) => parseServerObservationLine(line))
+			.filter((line) => line);
 
 		const pages = [];
 		for (let i = 0; i < infoLines.length; i += LINES_PER_PAGE) {
@@ -73,7 +88,7 @@ class ServerObservations extends WeatherDisplay {
 			pageLines.forEach((line) => {
 				const lineDiv = document.createElement('div');
 				lineDiv.className = 'server-line';
-				lineDiv.textContent = line.trim().replace(' == ', ': ');
+				lineDiv.textContent = `${line.key}: ${line.value}`;
 				pageElem.appendChild(lineDiv);
 			});
 
