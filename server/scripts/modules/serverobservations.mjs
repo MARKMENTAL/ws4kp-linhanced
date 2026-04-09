@@ -10,6 +10,8 @@ const LINES_PER_PAGE = 4;
 const PAGE_DURATION_MS = 7000;
 const ALLOWED_KEYS = new Set(['OS', 'Kernel', 'Uptime', 'CPU', 'GPU', 'Memory', 'Disk']);
 
+const isAllowedObservationKey = (key) => ALLOWED_KEYS.has(key) || key.startsWith('Disk');
+
 const parseServerObservationLine = (line) => {
 	const trimmed = line.trim();
 	if (!trimmed) return null;
@@ -20,7 +22,7 @@ const parseServerObservationLine = (line) => {
 		if (separatorIndex > 0) {
 			const key = trimmed.slice(0, separatorIndex).trim();
 			const value = trimmed.slice(separatorIndex + separator.length).trim();
-			if (key && value && ALLOWED_KEYS.has(key)) {
+			if (key && value && isAllowedObservationKey(key)) {
 				return { key, value };
 			}
 		}
