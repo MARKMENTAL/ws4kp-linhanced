@@ -1,13 +1,22 @@
 import { text } from './utils/fetch.mjs';
 import Setting from './utils/setting.mjs';
 import { registerHiddenSetting } from './share.mjs';
+import { withBasePath } from './utils/base-path.mjs';
 
 let playlist;
 let currentTrack = 0;
 let player;
+let alertTonePlayer;
 let sliderTimeout = null;
 let volumeSlider = null;
 let volumeSliderInput = null;
+let alertToneActive = false;
+let alertTonePending = false;
+let resumeMediaAfterAlertTone = false;
+let audioUnlocked = false;
+let alertToneTimeout = null;
+
+const ALERT_TONE_DURATION_MS = 30_000;
 
 const mediaPlaying = new Setting('mediaPlaying', {
 	name: 'Media Playing',
@@ -33,10 +42,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// get the playlist
 	getMedia();
+	registerAudioUnlockHandlers();
 
 	// register the volume setting
 	registerHiddenSetting(mediaVolume.elemId, mediaVolume);
 });
+
+const unlockAudio = () => {
+	if (audioUnlocked) return;
+	audioUnlocked = true;
+	if (alertToneActive && alertTonePending) {
+		startAlertTone();
+	}
+};
+
+const registerAudioUnlockHandlers = () => {
+	['pointerdown', 'keydown', 'touchstart'].forEach((eventName) => {
+		document.addEventListener(eventName, unlockAudio, { passive: true, once: true });
+	});
+};
 
 const scanMusicDirectory = async () => {
 	const parseDirectory = async (path, prefix = '') => {
@@ -170,6 +194,7 @@ const startMedia = async () => {
 	if (!player) {
 		initializePlayer();
 	} else {
+		if (alertToneActive) return;
 		try {
 			await player.play();
 			setTrackName(playlist.availableFiles[currentTrack]);
@@ -275,6 +300,73 @@ const initializePlayer = () => {
 	volumeSliderInput.value = Math.round(mediaVolume.value * 100);
 };
 
+const initializeAlertTonePlayer = () => {
+	if (alertTonePlayer) return;
+	alertTonePlayer = new Audio(withBasePath('alert/tone.mp3'));
+	alertTonePlayer.type = 'audio/mpeg';
+	alertTonePlayer.preload = 'auto';
+	alertTonePlayer.addEventListener('ended', () => {
+		if (alertToneActive) {
+			alertTonePlayer.currentTime = 0;
+			alertTonePlayer.play().catch((e) => {
+				console.error('Couldn\'t continue alert tone');
+				console.error(e);
+			});
+		}
+	});
+};
+
+const startAlertTone = async () => {
+	if (!audioUnlocked) {
+		alertTonePending = true;
+		return;
+	}
+	initializeAlertTonePlayer();
+	try {
+		await alertTonePlayer.play();
+		alertTonePending = false;
+		resumeMediaAfterAlertTone = mediaPlaying.value === true;
+		if (alertToneTimeout) clearTimeout(alertToneTimeout);
+		alertToneTimeout = setTimeout(() => {
+			if (alertToneActive) {
+				setAlertToneActive(false);
+			}
+		}, ALERT_TONE_DURATION_MS);
+		if (player && !player.paused) {
+			player.pause();
+		}
+	} catch (e) {
+		console.error('Couldn\'t play alert tone');
+		console.error(e);
+	}
+};
+
+const stopAlertTone = () => {
+	alertTonePending = false;
+	if (alertToneTimeout) {
+		clearTimeout(alertToneTimeout);
+		alertToneTimeout = null;
+	}
+	if (alertTonePlayer) {
+		alertTonePlayer.pause();
+		alertTonePlayer.currentTime = 0;
+	}
+	if (resumeMediaAfterAlertTone && mediaPlaying.value === true) {
+		startMedia();
+	}
+	resumeMediaAfterAlertTone = false;
+};
+
+const setAlertToneActive = (active) => {
+	if (active === alertToneActive) return;
+	alertToneActive = active;
+	if (alertToneActive) {
+		startAlertTone();
+		return;
+	}
+	stopAlertTone();
+};
+
 const playerCanPlay = async () => {
 	// check to make sure they user still wants music (protect against slow loading music)
 	if (!mediaPlaying.value) return;
@@ -304,6 +396,6 @@ const setTrackName = (fileName) => {
 };
 
 export {
-	// eslint-disable-next-line import/prefer-default-export
 	handleClick,
+	setAlertToneActive,
 };

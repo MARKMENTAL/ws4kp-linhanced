@@ -1,6 +1,7 @@
 // hourly forecast list
 
 import STATUS from './status.mjs';
+import { setAlertToneActive } from './media.mjs';
 import { safeJson } from './utils/fetch.mjs';
 import WeatherDisplay from './weatherdisplay.mjs';
 import { registerDisplay } from './navigation.mjs';
@@ -57,6 +58,7 @@ class Hazards extends WeatherDisplay {
 		const superResult = super.getData(weatherParameters, refresh);
 		if (!this.weatherParameters?.supportsNoaaAlerts) {
 			this.data = [];
+			setAlertToneActive(false);
 			this.timing.totalScreens = 0;
 			this.getDataCallback();
 			this.setStatus(STATUS.loaded);
@@ -99,6 +101,7 @@ class Hazards extends WeatherDisplay {
 				this.data = filteredAlerts;
 			}
 			this.alertSignature = getAlertSignature(this.data);
+			setAlertToneActive(this.data.length > 0);
 			const alertsChanged = previousSignature !== this.alertSignature;
 			if (alertsChanged) {
 				this.viewedAlerts.clear();
@@ -129,6 +132,7 @@ class Hazards extends WeatherDisplay {
 			}
 		} catch (error) {
 			console.error(`Unexpected Active Alerts error: ${error.message}`);
+			setAlertToneActive(false);
 			if (this.isEnabled) this.setStatus(STATUS.failed);
 			// return undefined to other subscribers
 			this.getDataCallback(undefined);
