@@ -3,6 +3,7 @@
 import STATUS from './status.mjs';
 import { setAlertToneActive } from './media.mjs';
 import { safeJson } from './utils/fetch.mjs';
+import deriveHazards from './utils/derived-hazards.mjs';
 import WeatherDisplay from './weatherdisplay.mjs';
 import { registerDisplay } from './navigation.mjs';
 import calculateScrollTiming from './utils/scroll-timing.mjs';
@@ -56,14 +57,6 @@ class Hazards extends WeatherDisplay {
 	async getData(weatherParameters, refresh) {
 		// super checks for enabled
 		const superResult = super.getData(weatherParameters, refresh);
-		if (!this.weatherParameters?.supportsNoaaAlerts) {
-			this.data = [];
-			setAlertToneActive(false);
-			this.timing.totalScreens = 0;
-			this.getDataCallback();
-			this.setStatus(STATUS.loaded);
-			return;
-		}
 		// hazards performs a silent refresh, but does not fall back to a previous fetch if no data is available
 		// this is intentional to ensure the latest alerts only are displayed.
 
@@ -81,24 +74,28 @@ class Hazards extends WeatherDisplay {
 
 		try {
 			const previousSignature = this.alertSignature;
-			// get the forecast using centralized safe handling
-			const url = new URL('https://api.weather.gov/alerts/active');
-			url.searchParams.append('point', `${this.weatherParameters.latitude},${this.weatherParameters.longitude}`);
-			url.searchParams.append('status', 'actual');
-			const alerts = await safeJson(url, { retryCount: 3, stillWaiting: () => this.stillWaiting() });
-
-			if (!alerts) {
-				if (debugFlag('verbose-failures')) {
-					console.warn('Active Alerts request failed; assuming no active alerts');
-				}
-				this.data = [];
+			if (!this.weatherParameters?.supportsNoaaAlerts) {
+				this.data = deriveHazards(this.weatherParameters);
 			} else {
-				const allUnsortedAlerts = alerts.features ?? [];
-				const unsortedAlerts = allUnsortedAlerts.slice(0, 5);
-				const hasImmediate = unsortedAlerts.reduce((acc, hazard) => acc || hazard.properties.urgency === 'Immediate', false);
-				const sortedAlerts = unsortedAlerts.sort((a, b) => (calcSeverity(b.properties.severity, b.properties.event)) - (calcSeverity(a.properties.severity, a.properties.event)));
-				const filteredAlerts = sortedAlerts.filter((hazard) => hazard.properties.severity !== 'Unknown' && (!hasImmediate || (hazard.properties.urgency === 'Immediate')));
-				this.data = filteredAlerts;
+				// get the forecast using centralized safe handling
+				const url = new URL('https://api.weather.gov/alerts/active');
+				url.searchParams.append('point', `${this.weatherParameters.latitude},${this.weatherParameters.longitude}`);
+				url.searchParams.append('status', 'actual');
+				const alerts = await safeJson(url, { retryCount: 3, stillWaiting: () => this.stillWaiting() });
+
+				if (!alerts) {
+					if (debugFlag('verbose-failures')) {
+						console.warn('Active Alerts request failed; assuming no active alerts');
+					}
+					this.data = [];
+				} else {
+					const allUnsortedAlerts = alerts.features ?? [];
+					const unsortedAlerts = allUnsortedAlerts.slice(0, 5);
+					const hasImmediate = unsortedAlerts.reduce((acc, hazard) => acc || hazard.properties.urgency === 'Immediate', false);
+					const sortedAlerts = unsortedAlerts.sort((a, b) => (calcSeverity(b.properties.severity, b.properties.event)) - (calcSeverity(a.properties.severity, a.properties.event)));
+					const filteredAlerts = sortedAlerts.filter((hazard) => hazard.properties.severity !== 'Unknown' && (!hasImmediate || (hazard.properties.urgency === 'Immediate')));
+					this.data = filteredAlerts;
+				}
 			}
 			this.alertSignature = getAlertSignature(this.data);
 			setAlertToneActive(this.data.length > 0);
