@@ -95,17 +95,21 @@ const getWeather = async (latLon, haveDataCallback) => {
 
 	try {
 		const supportsNoaaDisplays = isUsLocation(location);
+		const shouldTryNoaaPoint = supportsNoaaDisplays || !location.countryCode;
 		let point = null;
 		let stations = null;
 		let stationId = '';
 
-		if (supportsNoaaDisplays) {
+		if (shouldTryNoaaPoint) {
 			point = await getPoint(latLon.lat, latLon.lon);
-			if (point?.properties?.observationStations) {
-				stations = await safeJson(point.properties.observationStations);
-				stationId = stations?.features?.[0]?.properties?.stationIdentifier ?? '';
-			}
 		}
+
+		if (supportsNoaaDisplays && point?.properties?.observationStations) {
+			stations = await safeJson(point.properties.observationStations);
+			stationId = stations?.features?.[0]?.properties?.stationIdentifier ?? '';
+		}
+
+		const supportsNoaaAlerts = !!(isUsLocation(location) || point);
 
 		const state = location.state || point?.properties?.relativeLocation?.properties?.state || '';
 		let city = location.city || point?.properties?.relativeLocation?.properties?.city || localStorage.getItem('latLonQuery') || '';
@@ -124,6 +128,7 @@ const getWeather = async (latLon, haveDataCallback) => {
 		weatherParameters.countryCode = location.countryCode ?? '';
 		weatherParameters.timeZone = openMeteoForecast.timezone;
 		weatherParameters.forecast = aggregatedForecast;
+		weatherParameters.supportsNoaaAlerts = supportsNoaaAlerts;
 		weatherParameters.supportsNoaaDisplays = !!(supportsNoaaDisplays && point && stations?.features?.length);
 		weatherParameters.zoneId = point?.properties?.forecastZone?.substr(-6) ?? '';
 		weatherParameters.radarId = point?.properties?.radarStation?.substr(-3) ?? '';

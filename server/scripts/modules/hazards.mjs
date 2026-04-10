@@ -18,6 +18,8 @@ const hazardModifiers = {
 	'Severe Thunderstorm Warning': 1,
 };
 
+const getAlertSignature = (alerts = []) => alerts.map((alert) => alert.id).sort().join('|');
+
 class Hazards extends WeatherDisplay {
 	constructor(navId, elemId, defaultActive) {
 		// special height and width for scrolling
@@ -34,6 +36,7 @@ class Hazards extends WeatherDisplay {
 		// take note of the already-shown alert ids
 		this.viewedAlerts = new Set();
 		this.viewedGetCount = 0;
+		this.alertSignature = '';
 
 		// cache for scroll calculations
 		// This cache is essential because baseCountChange() is called 25 times per second (every 40ms)
@@ -52,7 +55,7 @@ class Hazards extends WeatherDisplay {
 	async getData(weatherParameters, refresh) {
 		// super checks for enabled
 		const superResult = super.getData(weatherParameters, refresh);
-		if (!this.weatherParameters?.supportsNoaaDisplays) {
+		if (!this.weatherParameters?.supportsNoaaAlerts) {
 			this.data = [];
 			this.timing.totalScreens = 0;
 			this.getDataCallback();
@@ -75,6 +78,7 @@ class Hazards extends WeatherDisplay {
 		}
 
 		try {
+			const previousSignature = this.alertSignature;
 			// get the forecast using centralized safe handling
 			const url = new URL('https://api.weather.gov/alerts/active');
 			url.searchParams.append('point', `${this.weatherParameters.latitude},${this.weatherParameters.longitude}`);
@@ -93,6 +97,14 @@ class Hazards extends WeatherDisplay {
 				const sortedAlerts = unsortedAlerts.sort((a, b) => (calcSeverity(b.properties.severity, b.properties.event)) - (calcSeverity(a.properties.severity, a.properties.event)));
 				const filteredAlerts = sortedAlerts.filter((hazard) => hazard.properties.severity !== 'Unknown' && (!hasImmediate || (hazard.properties.urgency === 'Immediate')));
 				this.data = filteredAlerts;
+			}
+			this.alertSignature = getAlertSignature(this.data);
+			const alertsChanged = previousSignature !== this.alertSignature;
+			if (alertsChanged) {
+				this.viewedAlerts.clear();
+				if (this.data.length > 0) {
+					postMessage({ type: 'current-weather-scroll', method: 'reload' });
+				}
 			}
 
 			// every 10 times through the get process (10 minutes), reset the viewed messages
@@ -137,10 +149,11 @@ class Hazards extends WeatherDisplay {
 		const list = this.elem.querySelector('.hazard-lines');
 		list.innerHTML = '';
 
-		// filter viewed alerts
+		// Prefer new alerts, but keep active alerts visible even after they've been viewed once.
 		const unViewed = this.data.filter((data) => !this.viewedAlerts.has(data.id));
+		const alertsToDisplay = unViewed.length > 0 ? unViewed : this.data;
 
-		const lines = unViewed.map((data) => {
+		const lines = alertsToDisplay.map((data) => {
 			const fillValues = {};
 			const description = data.properties.description
 				.replaceAll('\n\n', '<br/><br/>')
@@ -230,8 +243,6 @@ class Hazards extends WeatherDisplay {
 		const superValue = super.screenIndexFromBaseCount();
 		// false is returned when we reach the end of the scroll
 		if (superValue === false) {
-			// set total screens to zero to take this out of the rotation
-			this.timing.totalScreens = 0;
 			// note the ids shown
 			this?.data?.forEach((alert) => this.viewedAlerts.add(alert.id));
 		}

@@ -189,11 +189,35 @@ const init = async () => {
 
 const normalizeArcGisLocation = (rawLocation = {}, fallbackLabel = '') => {
 	const attributes = rawLocation.attributes ?? rawLocation.address ?? {};
-	const countryCode = attributes.CountryCode ?? attributes.countryCode ?? attributes.country_code ?? null;
-	const country = attributes.Country ?? attributes.countryName ?? attributes.country ?? null;
-	const state = attributes.RegionAbbr ?? attributes.Region ?? attributes.Subregion ?? attributes.region ?? '';
-	const city = attributes.City ?? attributes.CityName ?? attributes.MetroArea ?? rawLocation.name ?? '';
-	const label = fallbackLabel || rawLocation.name || [city, state || country].filter(Boolean).join(', ');
+	const label = fallbackLabel || rawLocation.name || attributes.LongLabel || attributes.Match_addr || '';
+	const labelParts = label.split(',').map((part) => part.trim()).filter(Boolean);
+	const fallbackCountryCode = labelParts[labelParts.length - 1] === 'USA' ? 'USA' : null;
+	const fallbackCountry = fallbackCountryCode ? 'United States' : null;
+	const fallbackState = labelParts.length >= 2 && /^[A-Z]{2,3}$/.test(labelParts[labelParts.length - 2]) ? labelParts[labelParts.length - 2] : '';
+	const fallbackCity = labelParts[0] ?? rawLocation.name ?? '';
+
+	const countryCode = attributes.CountryCode
+		?? attributes.countryCode
+		?? attributes.country_code
+		?? fallbackCountryCode
+		?? null;
+	const country = attributes.CntryName
+		?? attributes.Country
+		?? attributes.countryName
+		?? attributes.country
+		?? fallbackCountry
+		?? null;
+	const state = attributes.RegionAbbr
+		?? attributes.Region
+		?? attributes.Subregion
+		?? attributes.region
+		?? fallbackState;
+	const city = attributes.City
+		?? attributes.CityName
+		?? attributes.PlaceName
+		?? attributes.MetroArea
+		?? rawLocation.name
+		?? fallbackCity;
 
 	return {
 		city,
