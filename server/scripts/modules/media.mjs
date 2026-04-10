@@ -12,11 +12,21 @@ let volumeSlider = null;
 let volumeSliderInput = null;
 let alertToneActive = false;
 let alertTonePending = false;
-let resumeMediaAfterAlertTone = false;
 let audioUnlocked = false;
-let alertToneTimeout = null;
 
-const ALERT_TONE_DURATION_MS = 30_000;
+const ALERT_DUCK_VOLUME = 0.05;
+const MAX_MEDIA_VOLUME = 0.20;
+
+const isAlertToneBlockingMedia = () => alertToneActive || alertTonePending;
+
+const clampMediaVolume = (value) => Math.min(Math.max(value, ALERT_DUCK_VOLUME), MAX_MEDIA_VOLUME);
+
+const getActiveMediaVolume = () => {
+	if (isAlertToneBlockingMedia()) {
+		return ALERT_DUCK_VOLUME;
+	}
+	return clampMediaVolume(mediaVolume.value);
+};
 
 const mediaPlaying = new Setting('mediaPlaying', {
 	name: 'Media Playing',
@@ -46,12 +56,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// register the volume setting
 	registerHiddenSetting(mediaVolume.elemId, mediaVolume);
+	if (mediaVolume.value !== clampMediaVolume(mediaVolume.value)) {
+		mediaVolume.value = clampMediaVolume(mediaVolume.value);
+	}
 });
 
 const unlockAudio = () => {
 	if (audioUnlocked) return;
 	audioUnlocked = true;
-	if (alertToneActive && alertTonePending) {
+	if (alertTonePending) {
 		startAlertTone();
 	}
 };
@@ -194,8 +207,8 @@ const startMedia = async () => {
 	if (!player) {
 		initializePlayer();
 	} else {
-		if (alertToneActive) return;
 		try {
+			player.volume = getActiveMediaVolume();
 			await player.play();
 			setTrackName(playlist.availableFiles[currentTrack]);
 		} catch (e) {
@@ -245,8 +258,9 @@ const randomizePlaylist = () => {
 };
 
 const setVolume = (newVolume) => {
+	const clampedVolume = clampMediaVolume(newVolume);
 	if (player) {
-		player.volume = newVolume;
+		player.volume = isAlertToneBlockingMedia() ? ALERT_DUCK_VOLUME : clampedVolume;
 	}
 };
 
@@ -254,8 +268,7 @@ const sliderChanged = () => {
 	// get the value of the slider
 	if (volumeSlider) {
 		const newValue = volumeSliderInput.value;
-		const cleanValue = parseFloat(newValue) / 100;
-		setVolume(cleanValue);
+		const cleanValue = clampMediaVolume(parseFloat(newValue) / 100);
 		mediaVolume.value = cleanValue;
 	}
 };
@@ -263,12 +276,12 @@ const sliderChanged = () => {
 const mediaVolume = new Setting('mediaVolume', {
 	name: 'Volume',
 	type: 'select',
-	defaultValue: 0.75,
+	defaultValue: 0.15,
 	values: [
-		[1, '100%'],
-		[0.75, '75%'],
-		[0.50, '50%'],
-		[0.25, '25%'],
+		[0.20, '20%'],
+		[0.15, '15%'],
+		[0.10, '10%'],
+		[0.05, '5%'],
 	],
 	changeAction: setVolume,
 });
@@ -296,7 +309,7 @@ const initializePlayer = () => {
 	setTrackName(playlist.availableFiles[currentTrack]);
 	player.type = 'audio/mpeg';
 	// set volume and slider indicator
-	setVolume(mediaVolume.value);
+	setVolume(getActiveMediaVolume());
 	volumeSliderInput.value = Math.round(mediaVolume.value * 100);
 };
 
@@ -305,15 +318,23 @@ const initializeAlertTonePlayer = () => {
 	alertTonePlayer = new Audio(withBasePath('alert/tone.mp3'));
 	alertTonePlayer.type = 'audio/mpeg';
 	alertTonePlayer.preload = 'auto';
-	alertTonePlayer.addEventListener('ended', () => {
-		if (alertToneActive) {
-			alertTonePlayer.currentTime = 0;
-			alertTonePlayer.play().catch((e) => {
-				console.error('Couldn\'t continue alert tone');
-				console.error(e);
-			});
-		}
-	});
+	alertTonePlayer.addEventListener('ended', finishAlertTone);
+};
+
+const duckMediaForAlert = () => {
+	if (!player || player.paused) return;
+	player.volume = ALERT_DUCK_VOLUME;
+};
+
+const restoreMediaAfterAlert = () => {
+	if (!player) return;
+	player.volume = clampMediaVolume(mediaVolume.value);
+};
+
+const finishAlertTone = () => {
+	alertToneActive = false;
+	alertTonePending = false;
+	restoreMediaAfterAlert();
 };
 
 const startAlertTone = async () => {
@@ -323,19 +344,16 @@ const startAlertTone = async () => {
 	}
 	initializeAlertTonePlayer();
 	try {
+		alertTonePending = true;
+		duckMediaForAlert();
+		alertToneActive = true;
+		alertTonePlayer.currentTime = 0;
 		await alertTonePlayer.play();
 		alertTonePending = false;
-		resumeMediaAfterAlertTone = mediaPlaying.value === true;
-		if (alertToneTimeout) clearTimeout(alertToneTimeout);
-		alertToneTimeout = setTimeout(() => {
-			if (alertToneActive) {
-				setAlertToneActive(false);
-			}
-		}, ALERT_TONE_DURATION_MS);
-		if (player && !player.paused) {
-			player.pause();
-		}
 	} catch (e) {
+		alertToneActive = false;
+		alertTonePending = false;
+		restoreMediaAfterAlert();
 		console.error('Couldn\'t play alert tone');
 		console.error(e);
 	}
@@ -343,29 +361,14 @@ const startAlertTone = async () => {
 
 const stopAlertTone = () => {
 	alertTonePending = false;
-	if (alertToneTimeout) {
-		clearTimeout(alertToneTimeout);
-		alertToneTimeout = null;
-	}
 	if (alertTonePlayer) {
 		alertTonePlayer.pause();
 		alertTonePlayer.currentTime = 0;
 	}
-	if (resumeMediaAfterAlertTone && mediaPlaying.value === true) {
-		startMedia();
-	}
-	resumeMediaAfterAlertTone = false;
+	finishAlertTone();
 };
 
-const setAlertToneActive = (active) => {
-	if (active === alertToneActive) return;
-	alertToneActive = active;
-	if (alertToneActive) {
-		startAlertTone();
-		return;
-	}
-	stopAlertTone();
-};
+const playAlertTone = () => startAlertTone();
 
 const playerCanPlay = async () => {
 	// check to make sure they user still wants music (protect against slow loading music)
@@ -397,5 +400,6 @@ const setTrackName = (fileName) => {
 
 export {
 	handleClick,
-	setAlertToneActive,
+	playAlertTone,
+	stopAlertTone,
 };

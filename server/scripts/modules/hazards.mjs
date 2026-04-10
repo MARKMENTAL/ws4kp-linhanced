@@ -1,7 +1,7 @@
 // hourly forecast list
 
 import STATUS from './status.mjs';
-import { setAlertToneActive } from './media.mjs';
+import { playAlertTone, stopAlertTone } from './media.mjs';
 import { safeJson } from './utils/fetch.mjs';
 import deriveHazards from './utils/derived-hazards.mjs';
 import WeatherDisplay from './weatherdisplay.mjs';
@@ -98,12 +98,14 @@ class Hazards extends WeatherDisplay {
 				}
 			}
 			this.alertSignature = getAlertSignature(this.data);
-			setAlertToneActive(this.data.length > 0);
 			const alertsChanged = previousSignature !== this.alertSignature;
 			if (alertsChanged) {
 				this.viewedAlerts.clear();
 				if (this.data.length > 0) {
+					playAlertTone();
 					postMessage({ type: 'current-weather-scroll', method: 'reload' });
+				} else {
+					stopAlertTone();
 				}
 			}
 
@@ -129,7 +131,7 @@ class Hazards extends WeatherDisplay {
 			}
 		} catch (error) {
 			console.error(`Unexpected Active Alerts error: ${error.message}`);
-			setAlertToneActive(false);
+			stopAlertTone();
 			if (this.isEnabled) this.setStatus(STATUS.failed);
 			// return undefined to other subscribers
 			this.getDataCallback(undefined);
