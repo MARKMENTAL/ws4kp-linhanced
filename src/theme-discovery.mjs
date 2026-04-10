@@ -18,6 +18,7 @@ const discoverThemes = async () => {
 				background3: files.includes('3.png'),
 				background4: files.includes('4.png'),
 				background5: files.includes('5.png'),
+				background6: files.includes('6.png'),
 				logoCorner: files.includes('logo-corner.png'),
 			};
 		}));

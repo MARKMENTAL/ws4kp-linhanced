@@ -10,6 +10,7 @@ const BUILTIN_ASSETS = {
 	background3: 'images/backgrounds/3.png',
 	background4: 'images/backgrounds/4.png',
 	background5: 'images/backgrounds/5.png',
+	background6: 'images/backgrounds/6.png',
 	logoCorner: 'images/logos/logo-corner.png',
 };
 
@@ -44,6 +45,8 @@ const getThemeAssetUrl = (themeName, assetKey) => {
 			return withBasePath(`themes/${themeName}/4.png`);
 		case 'background5':
 			return withBasePath(`themes/${themeName}/5.png`);
+		case 'background6':
+			return withBasePath(`themes/${themeName}/6.png`);
 		case 'logoCorner':
 			return withBasePath(`themes/${themeName}/logo-corner.png`);
 		default:
@@ -61,6 +64,7 @@ const applyTheme = (themeName) => {
 	document.documentElement.style.setProperty('--theme-background-3', `url('${getThemeAssetUrl(selectedTheme, 'background3')}')`);
 	document.documentElement.style.setProperty('--theme-background-4', `url('${getThemeAssetUrl(selectedTheme, 'background4')}')`);
 	document.documentElement.style.setProperty('--theme-background-5', `url('${getThemeAssetUrl(selectedTheme, 'background5')}')`);
+	document.documentElement.style.setProperty('--theme-background-6', `url('${getThemeAssetUrl(selectedTheme, 'background6')}')`);
 
 	document.querySelectorAll('.theme-logo').forEach((img) => {
 		img.src = getThemeAssetUrl(selectedTheme, 'logoCorner');
