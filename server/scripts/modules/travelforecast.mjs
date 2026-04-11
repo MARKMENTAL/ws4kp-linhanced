@@ -2,7 +2,6 @@
 import STATUS from './status.mjs';
 import { safePromiseAll } from './utils/fetch.mjs';
 import { getSmallIconFromWmoCode } from './icons.mjs';
-import { DateTime } from '../vendor/auto/luxon.mjs';
 import WeatherDisplay from './weatherdisplay.mjs';
 import { registerDisplay } from './navigation.mjs';
 import calculateScrollTiming from './utils/scroll-timing.mjs';
@@ -144,11 +143,6 @@ class TravelForecast extends WeatherDisplay {
 		// there are technically 2 canvases: the standard canvas and the extra-long canvas that contains the complete
 		// list of cities. The second canvas is copied into the standard canvas to create the scroll
 		super.drawCanvas();
-
-		// set up variables
-		const cities = this.data;
-
-		this.elem.querySelector('.header .title.dual .bottom').innerHTML = `For ${getTravelCitiesDayName(cities)}`;
 
 		this.finishDraw();
 	}
@@ -306,17 +300,6 @@ const getTravelDisplayHeight = (elem) => {
 	if (!main) return 0;
 	return Math.max(0, main.offsetHeight - (header?.offsetHeight ?? 0));
 };
-
-// effectively returns early on the first found date
-const getTravelCitiesDayName = (cities) => cities.reduce((dayName, city) => {
-	if (city && dayName === '') {
-		// today or tomorrow
-		const day = DateTime.local().plus({ days: (city.today) ? 0 : 1 });
-		// return the day
-		return day.toLocaleString({ weekday: 'long' });
-	}
-	return dayName;
-}, '');
 
 // register display, not active by default
 registerDisplay(new TravelForecast(5, 'travel', false));
