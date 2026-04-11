@@ -28,6 +28,9 @@ let nextUpdate = DEFAULT_UPDATE;
 let resetFlag;
 let defaultScreensLoaded = true;
 
+const isRadarDisplay = (display) => display?.elemId === 'radar';
+const isHazardsDisplay = (display) => display?.elemId === 'hazards';
+
 // start drawing conditions
 // reset starts from the first item in the text scroll list
 const start = () => {
@@ -70,7 +73,7 @@ const incrementInterval = (force) => {
 
 	// test current screen
 	const display = currentDisplay();
-	if (!display?.okToDrawCurrentConditions) {
+	if (!display || isHazardsDisplay(display) || (!display.okToDrawCurrentConditions && !isRadarDisplay(display))) {
 		stop(display?.elemId === 'progress');
 		hide();
 		return;
@@ -82,14 +85,20 @@ const incrementInterval = (force) => {
 };
 
 const drawScreen = async () => {
+	const display = currentDisplay();
+	if (!display || isHazardsDisplay(display) || (!display.okToDrawCurrentConditions && !isRadarDisplay(display))) {
+		hide();
+		return;
+	}
+
 	// get the conditions
 	const { data, parameters } = await getCurrentWeather();
 
 	// create a data object (empty if no valid current weather conditions)
 	const scrollData = data || {};
 
-	// add the hazards if on screen 0
-	if (screenIndex === 0) {
+	// add the hazards if on screen 0 or for Radar's hazard-only crawl
+	if (screenIndex === 0 || isRadarDisplay(display)) {
 		const hazards = await getHazards();
 		if (hazards && hazards.length > 0) {
 			scrollData.hazards = hazards;
@@ -97,7 +106,24 @@ const drawScreen = async () => {
 	}
 
 	// if we have no current weather and no hazards, there's nothing to display
-	if (!data && (!scrollData.hazards || scrollData.hazards.length === 0)) return;
+	if (!data && (!scrollData.hazards || scrollData.hazards.length === 0)) {
+		hide();
+		return;
+	}
+
+	if (isRadarDisplay(display)) {
+		const radarHazard = hazards(scrollData);
+		if (!radarHazard) {
+			hide();
+			return;
+		}
+		mainScroll.classList.forEach((cls) => { if (cls !== 'scroll') mainScroll.classList.remove(cls); });
+		radarHazard.classes.forEach((cls) => mainScroll.classList.add(cls));
+		setHeader(radarHazard.header);
+		drawScrollCondition(radarHazard);
+		show();
+		return;
+	}
 
 	const thisScreen = workingScreens[screenIndex](scrollData, parameters);
 

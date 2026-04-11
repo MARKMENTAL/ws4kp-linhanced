@@ -167,6 +167,14 @@
 
 }
 
+.radar #container>.scroll {
+	z-index: 100;
+}
+
+.radar #container>.scroll.hazard {
+	z-index: 1000 !important;
+}
+
 .wide #container>.scroll {
 	width: 854px;
 	margin-left: -107px;
