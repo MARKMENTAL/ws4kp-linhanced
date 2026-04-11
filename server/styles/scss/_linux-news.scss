@@ -30,6 +30,7 @@
 		.story {
 			height: 116px;
 			overflow: hidden;
+			margin-top: 20px;
 		}
 
 		.headline {
@@ -44,11 +45,12 @@
 
 		.blurb {
 			font-family: 'Star4000';
-			font-size: 14pt;
-			line-height: 16px;
+			font-size: 12pt;
+			line-height: 10pt;
 			color: #fff;
 			@include u.text-shadow();
 			overflow: hidden;
+			padding-right: 30px;
 		}
 	}
 }
