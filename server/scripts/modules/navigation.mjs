@@ -28,6 +28,38 @@ const getStoredLocationMetadata = () => {
 
 const isUsLocation = (location) => ['US', 'USA'].includes((location?.countryCode ?? '').toUpperCase());
 
+const isWithinBounds = (latLon, bounds) => latLon.lat >= bounds.minLat
+	&& latLon.lat <= bounds.maxLat
+	&& latLon.lon >= bounds.minLon
+	&& latLon.lon <= bounds.maxLon;
+
+const isWithinUsFallbackBounds = (latLon) => [
+	{
+		minLat: 24.0,
+		maxLat: 49.5,
+		minLon: -125.0,
+		maxLon: -66.5,
+	},
+	{
+		minLat: 51.0,
+		maxLat: 71.5,
+		minLon: -179.5,
+		maxLon: -129.5,
+	},
+	{
+		minLat: 18.5,
+		maxLat: 22.5,
+		minLon: -160.5,
+		maxLon: -154.5,
+	},
+].some((bounds) => isWithinBounds(latLon, bounds));
+
+const supportsNoaaLocation = (location, latLon) => {
+	if (isUsLocation(location)) return true;
+	if (!location?.countryCode) return isWithinUsFallbackBounds(latLon);
+	return false;
+};
+
 const getFallbackLocation = (latLon) => {
 	const query = localStorage.getItem('latLonQuery') ?? `${latLon.lat.toFixed(4)}, ${latLon.lon.toFixed(4)}`;
 	const [city = query, state = ''] = query.split(',').map((part) => part.trim());
@@ -94,22 +126,21 @@ const getWeather = async (latLon, haveDataCallback) => {
 	if (typeof haveDataCallback === 'function') haveDataCallback(location);
 
 	try {
-		const supportsNoaaDisplays = isUsLocation(location);
-		const shouldTryNoaaPoint = supportsNoaaDisplays || !location.countryCode;
+		const noaaEligibleLocation = supportsNoaaLocation(location, latLon);
 		let point = null;
 		let stations = null;
 		let stationId = '';
 
-		if (shouldTryNoaaPoint) {
+		if (noaaEligibleLocation) {
 			point = await getPoint(latLon.lat, latLon.lon);
 		}
 
-		if (supportsNoaaDisplays && point?.properties?.observationStations) {
+		if (noaaEligibleLocation && point?.properties?.observationStations) {
 			stations = await safeJson(point.properties.observationStations);
 			stationId = stations?.features?.[0]?.properties?.stationIdentifier ?? '';
 		}
 
-		const supportsNoaaAlerts = !!(isUsLocation(location) || point);
+		const supportsNoaaAlerts = noaaEligibleLocation;
 
 		const state = location.state || point?.properties?.relativeLocation?.properties?.state || '';
 		let city = location.city || point?.properties?.relativeLocation?.properties?.city || localStorage.getItem('latLonQuery') || '';
@@ -129,7 +160,7 @@ const getWeather = async (latLon, haveDataCallback) => {
 		weatherParameters.timeZone = openMeteoForecast.timezone;
 		weatherParameters.forecast = aggregatedForecast;
 		weatherParameters.supportsNoaaAlerts = supportsNoaaAlerts;
-		weatherParameters.supportsNoaaDisplays = !!(supportsNoaaDisplays && point && stations?.features?.length);
+		weatherParameters.supportsNoaaDisplays = !!(noaaEligibleLocation && point && stations?.features?.length);
 		weatherParameters.zoneId = point?.properties?.forecastZone?.substr(-6) ?? '';
 		weatherParameters.radarId = point?.properties?.radarStation?.substr(-3) ?? '';
 		weatherParameters.stationId = stationId;
