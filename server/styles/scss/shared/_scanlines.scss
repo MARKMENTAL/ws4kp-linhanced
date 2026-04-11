@@ -16,24 +16,24 @@ $scan-opacity: 0.75;
    ========================================================= */
 
 // whole-screen softness
-$crt-soft-blur: 0.45px;
+$crt-soft-blur: 0.6px;
 
 // mild brightening / contrast to keep blur from looking muddy
-$crt-contrast: 1.04;
-$crt-saturation: 1.08;
-$crt-brightness: 0.98;
+$crt-contrast: 1.02;
+$crt-saturation: 1.12;
+$crt-brightness: 1.00;
 
 // fake horizontal chroma bleed
-$crt-r-shift: -0.7px;
-$crt-b-shift: 0.7px;
-$crt-bleed-blur: 1.2px;
-$crt-rgb-opacity: 0.04;
+$crt-r-shift: -1px;
+$crt-b-shift: 1px;
+$crt-bleed-blur: 1.8px;
+$crt-rgb-opacity: 0.05;
 
 // subtle tube edge darkening
 $crt-vignette-opacity: 0.16;
 
 // optional tiny bloom
-$crt-glow-opacity: 0.05;
+$crt-glow-opacity: 0.08;
 
 /* =========================================================
    MIXINS
@@ -240,4 +240,3 @@ $crt-glow-opacity: 0.05;
     background-position: 0 50%;
   }
 }
-
