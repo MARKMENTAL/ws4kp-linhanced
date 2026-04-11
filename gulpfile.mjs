@@ -1,10 +1,8 @@
 import updateVendor from './gulp/update-vendor.mjs';
-import publishFrontend, { buildDist, invalidate, stageFrontend } from './gulp/publish-frontend.mjs';
+import buildFrontend, { buildDist } from './gulp/publish-frontend.mjs';
 
 export {
 	updateVendor,
-	publishFrontend,
+	buildFrontend,
 	buildDist,
-	invalidate,
-	stageFrontend,
 };
