@@ -24,3 +24,7 @@
 		line-height: 40px;
 	}
 }
+
+:root[data-theme]:not([data-theme='default']) .weather-display .local-forecast .forecasts {
+	margin-top: 16px;
+}

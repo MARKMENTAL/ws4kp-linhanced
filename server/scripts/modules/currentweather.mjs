@@ -45,11 +45,15 @@ class CurrentWeather extends WeatherDisplay {
 		const wind = this.data.WindSpeed > 0
 			? this.data.WindDirection.padEnd(3, '') + this.data.WindSpeed.toString().padStart(3, ' ')
 			: 'Calm';
+		const isDefaultTheme = (document.documentElement.dataset.theme ?? 'default') === 'default';
+		const windText = !isDefaultTheme && this.data.WindGust > 0
+			? `${wind} - Gusts to ${this.data.WindGust}`
+			: wind;
 
 		const fill = {
 			temp: this.data.Temperature + String.fromCharCode(176),
 			condition,
-			wind,
+			wind: windText,
 			location: this.data.city.substr(0, 20),
 			humidity: `${this.data.Humidity}%`,
 			dewpoint: this.data.DewPoint + String.fromCharCode(176),
@@ -59,7 +63,7 @@ class CurrentWeather extends WeatherDisplay {
 			icon: { type: 'img', src: this.data.Icon },
 		};
 
-		if (this.data.WindGust > 0) fill['wind-gusts'] = `Gusts to ${this.data.WindGust}`;
+		if (isDefaultTheme && this.data.WindGust > 0) fill['wind-gusts'] = `Gusts to ${this.data.WindGust}`;
 
 		const area = this.elem.querySelector('.main');
 		area.innerHTML = '';

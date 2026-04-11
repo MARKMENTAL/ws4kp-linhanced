@@ -57,6 +57,7 @@ const getThemeAssetUrl = (themeName, assetKey) => {
 const applyTheme = (themeName) => {
 	const selectedTheme = getAvailableThemes().includes(themeName) ? themeName : DEFAULT_THEME;
 	localStorage.setItem(THEME_STORAGE_KEY, selectedTheme);
+	document.documentElement.dataset.theme = selectedTheme;
 
 	document.documentElement.style.setProperty('--theme-background-1', `url('${getThemeAssetUrl(selectedTheme, 'background1')}')`);
 	document.documentElement.style.setProperty('--theme-background-1-chart', `url('${getThemeAssetUrl(selectedTheme, 'background1Chart')}')`);
