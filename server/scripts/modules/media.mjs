@@ -385,6 +385,10 @@ const screenAudioMap = {
 };
 
 let screenAudioPlayer = null;
+let audioStartTime = 0;
+let audioStopTimeout = null;
+const AUDIO_MIN_PLAY_TIME = 500; // 500ms minimum play time
+let currentScreenId = null;
 
 // Helper function to check if screen audio is enabled (always reads from localStorage)
 const isScreenAudioEnabled = () => {
@@ -394,17 +398,35 @@ const isScreenAudioEnabled = () => {
 
 // Play screen audio
 const playScreenAudio = async (screenId) => {
+	console.log(`[AUDIO] playScreenAudio called for ${screenId}`);
+	
 	// Always check localStorage to ensure setting is current
-	if (!isScreenAudioEnabled()) return;
+	if (!isScreenAudioEnabled()) {
+		console.log(`[AUDIO] Aborting - screen audio disabled`);
+		return;
+	}
 	
 	const fileName = screenAudioMap[screenId];
-	if (!fileName) return;
+	if (!fileName) {
+		console.log(`[AUDIO] No audio file mapped for ${screenId}`);
+		return;
+	}
+	
+	// Cancel any pending stop timeout from previous audio
+	if (audioStopTimeout) {
+		console.log(`[AUDIO] Cancelling pending stop timeout for new audio`);
+		clearTimeout(audioStopTimeout);
+		audioStopTimeout = null;
+	}
 	
 	// Stop any existing screen audio first
 	stopScreenAudio();
 	
 	// Don't play if alert tone is active
-	if (alertToneActive || alertTonePending) return;
+	if (alertToneActive || alertTonePending) {
+		console.log(`[AUDIO] Aborting - alert tone active/pending`);
+		return;
+	}
 	
 	// Duck background music to 10%
 	if (player && !player.paused) {
@@ -414,17 +436,22 @@ const playScreenAudio = async (screenId) => {
 	// Create and play audio
 	screenAudioPlayer = new Audio(withBasePath(`alert/${fileName}`));
 	screenAudioPlayer.type = 'audio/mpeg';
+	currentScreenId = screenId;
 	
 	screenAudioPlayer.addEventListener('ended', () => {
+		console.log(`[AUDIO] 'ended' event fired for ${currentScreenId}`);
 		screenAudioPlayer = null;
+		currentScreenId = null;
 		// Only restore if alert isn't playing
 		if (!alertToneActive && !alertTonePending) {
 			restoreMediaAfterAlert();
 		}
 	});
 	
-	screenAudioPlayer.addEventListener('error', () => {
+	screenAudioPlayer.addEventListener('error', (e) => {
+		console.log(`[AUDIO] 'error' event fired for ${currentScreenId}:`, e.message || e);
 		screenAudioPlayer = null;
+		currentScreenId = null;
 		if (!alertToneActive && !alertTonePending) {
 			restoreMediaAfterAlert();
 		}
@@ -432,20 +459,68 @@ const playScreenAudio = async (screenId) => {
 	
 	try {
 		await screenAudioPlayer.play();
+		audioStartTime = Date.now();
+		console.log(`[AUDIO] Audio started for ${screenId} at ${audioStartTime}`);
 	} catch (e) {
+		console.log(`[AUDIO] Failed to play for ${screenId}:`, e.message);
 		screenAudioPlayer = null;
+		currentScreenId = null;
 		if (!alertToneActive && !alertTonePending) {
 			restoreMediaAfterAlert();
 		}
 	}
 };
 
-// Stop screen audio immediately
-const stopScreenAudio = () => {
+// Actually stop the audio (internal helper)
+const actuallyStopAudio = () => {
+	console.log(`[AUDIO] Actually stopping audio for ${currentScreenId}`);
 	if (screenAudioPlayer) {
 		screenAudioPlayer.pause();
 		screenAudioPlayer.currentTime = 0;
 		screenAudioPlayer = null;
+	}
+	currentScreenId = null;
+	audioStartTime = 0;
+	audioStopTimeout = null;
+};
+
+// Stop screen audio (with minimum play time protection)
+const stopScreenAudio = () => {
+	if (!screenAudioPlayer) {
+		console.log(`[AUDIO] stopScreenAudio called but no audio playing`);
+		return;
+	}
+	
+	const elapsed = Date.now() - audioStartTime;
+	console.log(`[AUDIO] stopScreenAudio called for ${currentScreenId}, elapsed: ${elapsed}ms`);
+	
+	// If we haven't played for the minimum time, delay the stop
+	if (elapsed < AUDIO_MIN_PLAY_TIME) {
+		const delay = AUDIO_MIN_PLAY_TIME - elapsed;
+		console.log(`[AUDIO] Delaying stop for ${delay}ms (minimum play time: ${AUDIO_MIN_PLAY_TIME}ms)`);
+		
+		// Clear any existing timeout first
+		if (audioStopTimeout) {
+			clearTimeout(audioStopTimeout);
+		}
+		
+		audioStopTimeout = setTimeout(() => {
+			// Check if this audio is still the current one (might have been replaced)
+			if (screenAudioPlayer && Date.now() - audioStartTime >= AUDIO_MIN_PLAY_TIME) {
+				console.log(`[AUDIO] Executing delayed stop for ${currentScreenId}`);
+				actuallyStopAudio();
+				// Restore music volume after delayed stop
+				if (!alertToneActive && !alertTonePending) {
+					restoreMediaAfterAlert();
+				}
+			} else {
+				console.log(`[AUDIO] Delayed stop cancelled - audio already changed or stopped`);
+			}
+		}, delay);
+	} else {
+		// Minimum play time met, stop immediately
+		console.log(`[AUDIO] Minimum play time met, stopping immediately`);
+		actuallyStopAudio();
 	}
 };
 

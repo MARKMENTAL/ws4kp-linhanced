@@ -9,6 +9,7 @@ import { parseQueryString } from './utils/setting.mjs';
 import settings from './settings.mjs';
 import { elemForEach } from './utils/elem.mjs';
 import { debugFlag } from './utils/debug.mjs';
+import { playScreenAudio, stopScreenAudio } from './media.mjs';
 
 class WeatherDisplay {
 	constructor(navId, elemId, name, defaultEnabled) {
@@ -228,9 +229,7 @@ class WeatherDisplay {
 		// Play screen-specific audio only if display was not already active
 		// This prevents audio restart on frame changes (e.g., Local Radar animation)
 		if (!wasActive) {
-			import('./media.mjs').then((media) => {
-				media.playScreenAudio(this.elemId);
-			});
+			playScreenAudio(this.elemId);
 		}
 	}
 
@@ -241,9 +240,7 @@ class WeatherDisplay {
 		document.querySelector('#divTwc').classList.remove(this.elemId);
 
 		// Stop screen audio when leaving
-		import('./media.mjs').then((media) => {
-			media.stopScreenAudio();
-		});
+		stopScreenAudio();
 	}
 
 	get active() {

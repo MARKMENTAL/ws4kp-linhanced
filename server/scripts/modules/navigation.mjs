@@ -6,6 +6,7 @@ import { safeJson } from './utils/fetch.mjs';
 import { getPoint, getOpenMeteoForecast, aggregateWeatherForecastData } from './utils/weather.mjs';
 import { debugFlag } from './utils/debug.mjs';
 import settings from './settings.mjs';
+import { stopScreenAudio } from './media.mjs';
 
 document.addEventListener('DOMContentLoaded', () => {
 	init();
@@ -386,17 +387,13 @@ const handleNavButton = (button) => {
 		case 'next':
 			setPlaying(false);
 			// Stop screen audio immediately when navigating
-			import('./media.mjs').then((media) => {
-				media.stopScreenAudio();
-			});
+			stopScreenAudio();
 			navTo(msg.command.nextFrame);
 			break;
 		case 'previous':
 			setPlaying(false);
 			// Stop screen audio immediately when navigating
-			import('./media.mjs').then((media) => {
-				media.stopScreenAudio();
-			});
+			stopScreenAudio();
 			navTo(msg.command.previousFrame);
 			break;
 		case 'menu':
