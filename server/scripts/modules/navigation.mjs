@@ -385,10 +385,18 @@ const handleNavButton = (button) => {
 			break;
 		case 'next':
 			setPlaying(false);
+			// Stop screen audio immediately when navigating
+			import('./media.mjs').then((media) => {
+				media.stopScreenAudio();
+			});
 			navTo(msg.command.nextFrame);
 			break;
 		case 'previous':
 			setPlaying(false);
+			// Stop screen audio immediately when navigating
+			import('./media.mjs').then((media) => {
+				media.stopScreenAudio();
+			});
 			navTo(msg.command.previousFrame);
 			break;
 		case 'menu':

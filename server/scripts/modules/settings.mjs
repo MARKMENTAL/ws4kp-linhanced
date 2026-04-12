@@ -231,6 +231,32 @@ document.addEventListener('DOMContentLoaded', () => {
 	settingsSection.innerHTML = '';
 	settingsSection.append(...settingHtml);
 
+	// Add screen audio toggle checkbox
+	const screenAudioContainer = document.createElement('div');
+	screenAudioContainer.className = 'info';
+	const screenAudioLabel = document.createElement('label');
+	screenAudioLabel.htmlFor = 'screen-audio-checkbox';
+	const screenAudioCheckbox = document.createElement('input');
+	screenAudioCheckbox.type = 'checkbox';
+	screenAudioCheckbox.id = 'screen-audio-checkbox';
+	// Load saved preference or default to enabled
+	const savedScreenAudio = window.localStorage.getItem('screenAudioEnabled');
+	screenAudioCheckbox.checked = savedScreenAudio !== null ? savedScreenAudio === 'true' : true;
+	screenAudioCheckbox.addEventListener('change', () => {
+		window.localStorage.setItem('screenAudioEnabled', screenAudioCheckbox.checked);
+		// Import media module and update setting
+		import('./media.mjs').then((media) => {
+			// Media module will read the localStorage value
+			if (!screenAudioCheckbox.checked) {
+				media.stopScreenAudio();
+			}
+		});
+	});
+	screenAudioLabel.appendChild(screenAudioCheckbox);
+	screenAudioLabel.appendChild(document.createTextNode(' Play screen audio'));
+	screenAudioContainer.appendChild(screenAudioLabel);
+	settingsSection.appendChild(screenAudioContainer);
+
 	// update visibility on some settings
 	const modeSelect = document.getElementById('settings-scanLineMode-label');
 	const { value } = settings.scanLines;

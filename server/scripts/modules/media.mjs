@@ -59,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	if (mediaVolume.value !== clampMediaVolume(mediaVolume.value)) {
 		mediaVolume.value = clampMediaVolume(mediaVolume.value);
 	}
+
+	// Screen audio setting is managed via localStorage and checked directly in playScreenAudio()
 });
 
 const unlockAudio = () => {
@@ -342,6 +344,7 @@ const startAlertTone = async () => {
 		alertTonePending = true;
 		return;
 	}
+	stopScreenAudio(); // Stop screen audio when alert plays
 	initializeAlertTonePlayer();
 	try {
 		alertTonePending = true;
@@ -369,6 +372,82 @@ const stopAlertTone = () => {
 };
 
 const playAlertTone = () => startAlertTone();
+
+// Screen audio constants and variables
+const SCREEN_AUDIO_DUCK_VOLUME = 0.10; // 10% ducking (vs 5% for alerts)
+const screenAudioMap = {
+	'radar': 'local-radar.mp3',
+	'regional-forecast': 'regional-observations.mp3',
+	'travel': 'travel-forecast.mp3',
+	'hourly-graph': 'hourly-graph.mp3',
+	'hourly': 'hourly-forecast.mp3',
+	'current-weather': 'current-conditions.mp3',
+};
+
+let screenAudioPlayer = null;
+
+// Helper function to check if screen audio is enabled (always reads from localStorage)
+const isScreenAudioEnabled = () => {
+	const saved = window.localStorage.getItem('screenAudioEnabled');
+	return saved !== null ? saved === 'true' : true; // Default: enabled
+};
+
+// Play screen audio
+const playScreenAudio = async (screenId) => {
+	// Always check localStorage to ensure setting is current
+	if (!isScreenAudioEnabled()) return;
+	
+	const fileName = screenAudioMap[screenId];
+	if (!fileName) return;
+	
+	// Stop any existing screen audio first
+	stopScreenAudio();
+	
+	// Don't play if alert tone is active
+	if (alertToneActive || alertTonePending) return;
+	
+	// Duck background music to 10%
+	if (player && !player.paused) {
+		player.volume = SCREEN_AUDIO_DUCK_VOLUME;
+	}
+	
+	// Create and play audio
+	screenAudioPlayer = new Audio(withBasePath(`alert/${fileName}`));
+	screenAudioPlayer.type = 'audio/mpeg';
+	
+	screenAudioPlayer.addEventListener('ended', () => {
+		screenAudioPlayer = null;
+		// Only restore if alert isn't playing
+		if (!alertToneActive && !alertTonePending) {
+			restoreMediaAfterAlert();
+		}
+	});
+	
+	screenAudioPlayer.addEventListener('error', () => {
+		screenAudioPlayer = null;
+		if (!alertToneActive && !alertTonePending) {
+			restoreMediaAfterAlert();
+		}
+	});
+	
+	try {
+		await screenAudioPlayer.play();
+	} catch (e) {
+		screenAudioPlayer = null;
+		if (!alertToneActive && !alertTonePending) {
+			restoreMediaAfterAlert();
+		}
+	}
+};
+
+// Stop screen audio immediately
+const stopScreenAudio = () => {
+	if (screenAudioPlayer) {
+		screenAudioPlayer.pause();
+		screenAudioPlayer.currentTime = 0;
+		screenAudioPlayer = null;
+	}
+};
 
 const playerCanPlay = async () => {
 	// check to make sure they user still wants music (protect against slow loading music)
@@ -402,4 +481,6 @@ export {
 	handleClick,
 	playAlertTone,
 	stopAlertTone,
+	playScreenAudio,
+	stopScreenAudio,
 };

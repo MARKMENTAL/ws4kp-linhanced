@@ -219,8 +219,19 @@ class WeatherDisplay {
 
 		this.startNavCount();
 
+		// Check if display was already active before showing
+		const wasActive = this.active;
+
 		this.elem.classList.add('show');
 		document.querySelector('#divTwc').classList.add(this.elemId);
+
+		// Play screen-specific audio only if display was not already active
+		// This prevents audio restart on frame changes (e.g., Local Radar animation)
+		if (!wasActive) {
+			import('./media.mjs').then((media) => {
+				media.playScreenAudio(this.elemId);
+			});
+		}
 	}
 
 	hideCanvas() {
@@ -228,6 +239,11 @@ class WeatherDisplay {
 		this.elem.classList.remove('show');
 		// used to change backgrounds for widescreen
 		document.querySelector('#divTwc').classList.remove(this.elemId);
+
+		// Stop screen audio when leaving
+		import('./media.mjs').then((media) => {
+			media.stopScreenAudio();
+		});
 	}
 
 	get active() {
