@@ -79,6 +79,10 @@ class RegionalForecast extends WeatherDisplay {
 			this.nearbyMarkers = await loadNearbyObservationMarkers(this.map, {
 				latitude: this.weatherParameters.latitude,
 				longitude: this.weatherParameters.longitude,
+			}, {
+				maxMarkers: 7,
+				minCityDistanceMeters: 15000,
+				minMarkerPixelDistance: 60,
 			});
 			this.nearbyMarkers.forEach((marker) => marker.addTo(this.map));
 			this.nearbyMarkersKey = markerKey;
