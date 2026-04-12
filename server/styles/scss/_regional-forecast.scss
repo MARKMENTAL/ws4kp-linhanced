@@ -57,8 +57,6 @@
 			flex-direction: column;
 			align-items: center;
 			min-width: 72px;
-			padding: 2px 4px;
-			background: rgb(255 255 255 / 0%);
 			color: #fff;
 			text-align: center;
 			opacity: 0.35;
@@ -76,15 +74,15 @@
 
 		.temp {
 			font-family: 'Star4000';
-			font-size: 18pt;
+			font-size: 21pt;
 			line-height: 1;
-			color: c.$title-color;
-			@include u.text-shadow();
+			color: #ff0;
+			text-shadow: 3px 3px 0 #000,-1.5px -1.5px 0 #000,0 -1.5px 0 #000,1.5px -1.5px 0 #000,1.5px 0 0 #000,1.5px 1.5px 0 #000,0 1.5px 0 #000,-1.5px 1.5px 0 #000,-1.5px 0 0 #000;
 		}
 
 		img {
 			width: auto;
-			height: 20px;
+			height: 32px;
 		}
 	}
 }
