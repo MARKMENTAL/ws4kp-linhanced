@@ -21,6 +21,7 @@ class RegionalForecast extends WeatherDisplay {
 		this.locationMarker = null;
 		this.nearbyMarkers = [];
 		this.nearbyMarkersKey = '';
+		this.refreshingMarkers = false;
 	}
 
 	async getData(weatherParameters, refresh) {
@@ -54,30 +55,36 @@ class RegionalForecast extends WeatherDisplay {
 	}
 
 	async refreshNearbyMarkers() {
-		if (!this.map || !this.active) return;
+		if (!this.map || !this.active || this.refreshingMarkers) return;
 
-		this.map.invalidateSize(false);
-		this.map.setView([this.weatherParameters.latitude, this.weatherParameters.longitude], 6);
+		this.refreshingMarkers = true;
 
-		const bounds = this.map.getBounds();
-		const markerKey = [
-			this.weatherParameters.latitude.toFixed(2),
-			this.weatherParameters.longitude.toFixed(2),
-			bounds.getSouth().toFixed(2),
-			bounds.getWest().toFixed(2),
-			bounds.getNorth().toFixed(2),
-			bounds.getEast().toFixed(2),
-		].join(':');
+		try {
+			this.map.invalidateSize(false);
+			this.map.setView([this.weatherParameters.latitude, this.weatherParameters.longitude], 6);
 
-		if (this.nearbyMarkers.length > 0 && this.nearbyMarkersKey === markerKey) return;
+			const bounds = this.map.getBounds();
+			const markerKey = [
+				this.weatherParameters.latitude.toFixed(2),
+				this.weatherParameters.longitude.toFixed(2),
+				bounds.getSouth().toFixed(2),
+				bounds.getWest().toFixed(2),
+				bounds.getNorth().toFixed(2),
+				bounds.getEast().toFixed(2),
+			].join(':');
 
-		this.nearbyMarkers = clearMarkers(this.map, this.nearbyMarkers);
-		this.nearbyMarkers = await loadNearbyObservationMarkers(this.map, {
-			latitude: this.weatherParameters.latitude,
-			longitude: this.weatherParameters.longitude,
-		});
-		this.nearbyMarkers.forEach((marker) => marker.addTo(this.map));
-		this.nearbyMarkersKey = markerKey;
+			if (this.nearbyMarkers.length > 0 && this.nearbyMarkersKey === markerKey) return;
+
+			this.nearbyMarkers = clearMarkers(this.map, this.nearbyMarkers);
+			this.nearbyMarkers = await loadNearbyObservationMarkers(this.map, {
+				latitude: this.weatherParameters.latitude,
+				longitude: this.weatherParameters.longitude,
+			});
+			this.nearbyMarkers.forEach((marker) => marker.addTo(this.map));
+			this.nearbyMarkersKey = markerKey;
+		} finally {
+			this.refreshingMarkers = false;
+		}
 	}
 
 	async ensureMap() {
