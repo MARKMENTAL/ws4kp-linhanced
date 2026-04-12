@@ -238,9 +238,7 @@ class WeatherDisplay {
 		this.elem.classList.remove('show');
 		// used to change backgrounds for widescreen
 		document.querySelector('#divTwc').classList.remove(this.elemId);
-
-		// Stop screen audio when leaving
-		stopScreenAudio();
+		// Note: Screen audio continues playing and stops naturally or when new audio starts
 	}
 
 	get active() {
