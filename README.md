@@ -47,8 +47,11 @@ Major features currently in this fork:
 * Open-Meteo-based international weather for the core forecast screens
 * ArcGIS-powered international location search and reverse geocoding
 * global RainViewer radar on a cached world basemap
-* global `Regional Observations` on the newer map stack
+* global `Regional Observations` and nearby-city displays backed by expanded worldwide city coverage
+* `Latest Observations` screen for nearby city temperatures, conditions, and wind
 * Travel Forecast rebuilt around region buckets with a global fallback
+* optional screen-specific audio playback for supported displays
+* wind/gust-based condition inference for better condition names and icon matches when upstream data is too generic
 * live theme switching with auto-discovered theme folders
 * Server Observations powered by [fastfetch](https://github.com/fastfetch-cli/fastfetch)
 * server-side caching proxy for Open-Meteo, RainViewer metadata, and ArcGIS basemap tiles
@@ -65,11 +68,18 @@ Some NOAA-only products are still retained where they remain useful and there is
 
 Current themes include:
 
-* `Default`: the standard WeatherStar 4000+ asset set
-* `oceanview`: based on the Oceanview Weather Channel presentation from the Eventide Media Center analog horror series
-* `slackware`: based on the Oceanview theme, but with the Slackware Linux badge/logo treatment
+* `Default`
+* `azazel`
+* `debian`
+* `linhanced`
+* `linhanced-retro`
+* `oceanview`
+* `slackware`
+* `twc-linhanced`
 
-Current themed assets include:
+Currently supported themed assets include:
+
+These filenames represent the standard override set used by the built-in themes.
 
 * `logo-corner.png`
 * `1.png`
@@ -78,6 +88,7 @@ Current themed assets include:
 * `3.png`
 * `4.png`
 * `5.png`
+* `6.png`
 
 Additional themes can be added by creating a subdirectory under `themes/` with matching override filenames.
 
@@ -86,7 +97,7 @@ Additional themes can be added by creating a subdirectory under `themes/` with m
 Ensure you have Node installed.
 
 ```bash
-git clone <your fork url here>
+git clone <repourlgoeshere>
 cd ws4kp-linhanced
 npm install
 npm start
@@ -132,7 +143,7 @@ Or upload the generated `dist/` directory to your web server after running:
 npm run build
 ```
 
-The static build has been adjusted so frontend-generated paths no longer assume deployment at `/`, which makes subdirectory hosting more practical.
+The static build has been adjusted so frontend-generated paths no longer assume deployment at `/`, which makes subdirectory hosting more practical. **Also, features that require a backend server like the on-disk cache and the fastfetch + LWN Linux News integration will not work when running the static build by itself.**
 
 ## International Support
 
@@ -141,6 +152,7 @@ Core forecast functionality works internationally.
 That currently includes:
 
 * Current Conditions
+* Latest Observations
 * Hourly Forecast
 * Hourly Graph
 * Local Forecast
@@ -162,6 +174,7 @@ Important settings and customization features include:
 * scan lines
 * US vs metric units
 * theme selection
+* optional screen audio toggle
 * custom bottom scroll text
 * display enable/disable checkboxes
 
@@ -199,7 +212,7 @@ A sample file exists at:
 server/scripts/custom.sample.js
 ```
 
-## Music
+## Audio
 
 The original WeatherStar atmosphere depended heavily on background music. This repo includes a small set of WeatherStar-inspired tracks, while keeping the total size manageable.
 
@@ -210,6 +223,14 @@ server/music/
 ```
 
 The application will build or serve a playlist from those files depending on the runtime mode.
+
+Alert and screen-specific audio clips live in:
+
+```text
+server/alert/
+```
+
+`tone.mp3` is used for alert playback, and supported displays can also use matching screen-specific audio clips from the same directory. Screen audio is optional and can be disabled from the Settings UI.
 
 ## Build And Maintenance Notes
 
