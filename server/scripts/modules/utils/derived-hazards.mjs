@@ -10,6 +10,7 @@ const SEVERITY_RANK = {
 };
 
 const RULE_PRIORITY = {
+	tropical: 6,
 	thunderstorm: 5,
 	freezing: 4,
 	snow: 3,
@@ -31,14 +32,26 @@ const thresholds = {
 	gustExtreme: 35 * KPH_PER_MPH,
 	highWindSevere: 40 * KPH_PER_MPH,
 	highWindExtreme: 55 * KPH_PER_MPH,
+	tropicalWindSevere: 50,
+	tropicalWindExtreme: 63,
+	tropicalGustSevere: 75,
+	tropicalGustExtreme: 90,
+	tropicalPressureSevere: 1002,
+	tropicalPressureExtreme: 998,
 	freezingTempC: 1,
 };
 
-const buildDerivedHazard = ({ id, severity, description, priority }) => ({
+const buildDerivedHazard = ({
+	id,
+	severity,
+	description,
+	priority,
+	event = 'Severe Weather Alert',
+}) => ({
 	id,
 	priority,
 	properties: {
-		event: 'Severe Weather Alert',
+		event,
 		severity,
 		urgency: 'Expected',
 		description: `This is a derived local alert based on forecast conditions. ${description}`,
@@ -137,6 +150,43 @@ const evaluateRain = (hours) => getWorstHour(hours, (hour) => {
 	return null;
 });
 
+const evaluateTropical = (hours) => getWorstHour(hours, (hour) => {
+	const code = Number(hour.weather_code ?? 0);
+	const sustainedWind = hour.wind_speed_10m ?? 0;
+	const gusts = hour.wind_gusts_10m ?? 0;
+	const pressureHpa = hour.pressure_msl ?? Number.POSITIVE_INFINITY;
+	const visibility = hour.visibility ?? Number.POSITIVE_INFINITY;
+	const hasRain = WEATHER_CODES.rain.has(code) || (hour.rain ?? 0) > 0 || (hour.showers ?? 0) > 0;
+
+	if (!hasRain) return null;
+
+	const meetsExtreme = (
+		(sustainedWind >= thresholds.tropicalWindExtreme || gusts >= thresholds.tropicalGustExtreme)
+		&& pressureHpa <= thresholds.tropicalPressureExtreme
+	);
+	if (meetsExtreme) {
+		return {
+			severity: 'Extreme',
+			description: visibility <= thresholds.lowVisibilitySevere
+				? 'Tropical storm conditions are expected in the next several hours, with very strong winds, heavy rain, poor visibility, and dangerous travel conditions.'
+				: 'Tropical storm conditions are expected in the next several hours, with very strong winds, heavy rain, and dangerous travel conditions.',
+		};
+	}
+
+	const meetsSevere = (
+		(sustainedWind >= thresholds.tropicalWindSevere || gusts >= thresholds.tropicalGustSevere)
+		&& pressureHpa <= thresholds.tropicalPressureSevere
+	);
+	if (meetsSevere) {
+		return {
+			severity: 'Severe',
+			description: 'Tropical storm conditions are possible in the next several hours, including heavy rain, strong winds, and dangerous travel conditions.',
+		};
+	}
+
+	return null;
+});
+
 const evaluateWind = (hours) => getWorstHour(hours, (hour) => {
 	const gusts = hour.wind_gusts_10m ?? 0;
 	if (gusts >= thresholds.highWindExtreme) {
@@ -157,6 +207,7 @@ const evaluateWind = (hours) => getWorstHour(hours, (hour) => {
 const deriveHazards = (weatherParameters) => {
 	const upcomingHours = getUpcomingHours(weatherParameters);
 	if (upcomingHours.length === 0) return [];
+	const tropicalCandidate = evaluateTropical(upcomingHours);
 	const thunderstormCandidate = evaluateThunderstorm(upcomingHours);
 	const freezingCandidate = evaluateFreezing(upcomingHours);
 	const snowCandidate = evaluateSnow(upcomingHours);
@@ -164,6 +215,12 @@ const deriveHazards = (weatherParameters) => {
 	const windCandidate = evaluateWind(upcomingHours);
 
 	const candidates = [
+		tropicalCandidate && buildDerivedHazard({
+			id: 'derived-severe-weather-alert-tropical',
+			priority: RULE_PRIORITY.tropical,
+			event: 'Tropical Storm Alert',
+			...tropicalCandidate,
+		}),
 		thunderstormCandidate && buildDerivedHazard({
 			id: 'derived-severe-weather-alert-thunderstorm',
 			priority: RULE_PRIORITY.thunderstorm,
