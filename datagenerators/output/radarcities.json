@@ -2178,5 +2178,100 @@
 		"name": "Richmond VA",
 		"lat": 37.5407,
 		"lon": -77.436
+	},
+	{
+		"name": "Springfield IL",
+		"lat": 39.7817,
+		"lon": -89.6501
+	},
+	{
+		"name": "Rockford",
+		"lat": 42.2711,
+		"lon": -89.0937
+	},
+	{
+		"name": "Peoria",
+		"lat": 40.6936,
+		"lon": -89.589
+	},
+	{
+		"name": "Champaign",
+		"lat": 40.1164,
+		"lon": -88.2434
+	},
+	{
+		"name": "St. Louis",
+		"lat": 38.627,
+		"lon": -90.1994
+	},
+	{
+		"name": "Kansas City",
+		"lat": 39.0997,
+		"lon": -94.5786
+	},
+	{
+		"name": "Omaha",
+		"lat": 41.2565,
+		"lon": -95.9345
+	},
+	{
+		"name": "Lincoln",
+		"lat": 40.8136,
+		"lon": -96.7026
+	},
+	{
+		"name": "Des Moines",
+		"lat": 41.5868,
+		"lon": -93.625
+	},
+	{
+		"name": "Cedar Rapids",
+		"lat": 41.9779,
+		"lon": -91.6656
+	},
+	{
+		"name": "Milwaukee",
+		"lat": 43.0389,
+		"lon": -87.9065
+	},
+	{
+		"name": "Madison",
+		"lat": 43.0731,
+		"lon": -89.4012
+	},
+	{
+		"name": "Indianapolis",
+		"lat": 39.7684,
+		"lon": -86.1581
+	},
+	{
+		"name": "Detroit",
+		"lat": 42.3314,
+		"lon": -83.0458
+	},
+	{
+		"name": "Cleveland",
+		"lat": 41.4993,
+		"lon": -81.6944
+	},
+	{
+		"name": "Columbus",
+		"lat": 39.9612,
+		"lon": -82.9988
+	},
+	{
+		"name": "Wichita",
+		"lat": 37.6872,
+		"lon": -97.3301
+	},
+	{
+		"name": "Topeka",
+		"lat": 39.0473,
+		"lon": -95.6752
+	},
+	{
+		"name": "Sioux Falls",
+		"lat": 43.5446,
+		"lon": -96.7311
 	}
 ]
