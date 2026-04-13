@@ -164,4 +164,5 @@ export {
 	setPrimaryLocationMarker,
 	loadNearbyObservationMarkers,
 	clearMarkers,
+	loadRadarCities,
 };

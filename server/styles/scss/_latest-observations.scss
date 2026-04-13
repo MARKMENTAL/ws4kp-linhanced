@@ -1,0 +1,86 @@
+@use 'shared/_colors' as c;
+@use 'shared/_utils' as u;
+
+.weather-display .main.latest-observations {
+	&.main {
+		padding-top: 18px;
+
+		.column-headers {
+			display: flex;
+			font-family: 'Star4000';
+			font-size: 14pt;
+			font-weight: bold;
+			color: #ff0;
+			width: 70%;
+			margin: 8px auto 10px;
+			padding-top: 20px;
+			text-shadow: 3px 3px 0 #000,-1.5px -1.5px 0 #000,0 -1.5px 0 #000,1.5px -1.5px 0 #000,1.5px 0 0 #000,1.5px 1.5px 0 #000,0 1.5px 0 #000,-1.5px 1.5px 0 #000,-1.5px 0 0 #000;
+
+			.city {
+				width: 30%;
+			}
+
+			.temp {
+				width: 15%;
+				text-align: center;
+			}
+
+			.conditions {
+				width: 30%;
+				text-align: center;
+			}
+
+			.wind {
+				width: 25%;
+				text-align: right;
+				padding-right: 4px;
+			}
+		}
+
+		.observation-lines {
+			width: 70%;
+			margin: 0 auto;
+
+			.observation-row {
+				display: flex;
+				font-family: 'Star4000';
+				font-size: 14pt;
+				line-height: 1.4;
+				margin-bottom: 4px;
+
+				@include u.text-shadow();
+
+				&.template {
+					display: none;
+				}
+
+				.city {
+					width: 30%;
+					overflow: hidden;
+					text-overflow: ellipsis;
+					white-space: nowrap;
+					color: #fff;
+				}
+
+				.temp {
+					width: 15%;
+					text-align: center;
+					color: c.$title-color;
+				}
+
+				.conditions {
+					width: 30%;
+					text-align: center;
+					color: #fff;
+				}
+
+				.wind {
+					width: 25%;
+					text-align: right;
+					padding-right: 4px;
+					color: #fff;
+				}
+			}
+		}
+	}
+}

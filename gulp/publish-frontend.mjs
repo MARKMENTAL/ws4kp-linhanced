@@ -68,6 +68,7 @@ const mjsSources = [
 	'server/scripts/modules/currentweatherscroll.mjs',
 	'server/scripts/modules/hazards.mjs',
 	'server/scripts/modules/currentweather.mjs',
+	'server/scripts/modules/latestobservations.mjs',
 	'server/scripts/modules/almanac.mjs',
 	'server/scripts/modules/spc-outlook.mjs',
 	'server/scripts/modules/icons.mjs',

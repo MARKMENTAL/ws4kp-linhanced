@@ -9,7 +9,7 @@ const OPEN_METEO_FORECAST_PARAMETERS = [
 ].join('&');
 
 const OPEN_METEO_RADAR_OBSERVATION_PARAMETERS = [
-	'hourly=temperature_2m,weather_code,is_day,wind_speed_10m,wind_gusts_10m',
+	'hourly=temperature_2m,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m',
 	'forecast_days=1',
 	'timezone=auto',
 	'models=best_match',
@@ -121,6 +121,7 @@ const getOpenMeteoObservationSnapshot = async (lat, lon) => {
 		isDay: Boolean(forecast.hourly.is_day?.[nearestIndex] ?? 1),
 		windSpeed: forecast.hourly.wind_speed_10m?.[nearestIndex] ?? 0,
 		windGusts: forecast.hourly.wind_gusts_10m?.[nearestIndex] ?? 0,
+		windDirection: forecast.hourly.wind_direction_10m?.[nearestIndex] ?? 0,
 		timezone: forecast.timezone,
 	};
 
