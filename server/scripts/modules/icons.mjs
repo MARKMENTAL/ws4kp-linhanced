@@ -2,6 +2,7 @@ import largeIcon from './icons/icons-large.mjs';
 import smallIcon from './icons/icons-small.mjs';
 import hourlyIcon from './icons/icons-hourly.mjs';
 import { withBasePath } from './utils/base-path.mjs';
+import { getWindDescriptor } from './utils/weather.mjs';
 
 const getWeatherGovTokenFromWmoCode = (code) => {
 	switch (Number(code)) {
@@ -50,10 +51,42 @@ const buildSyntheticIconUrl = (code, isDaytime = true) => withBasePath(`icons/la
 const getLargeIconFromWmoCode = (code, isDaytime = true) => largeIcon(buildSyntheticIconUrl(code, isDaytime), !isDaytime);
 const getSmallIconFromWmoCode = (code, isDaytime = true) => smallIcon(buildSyntheticIconUrl(code, isDaytime), !isDaytime);
 
+// Wind-aware icon selection
+const getWeatherGovTokenFromWmoCodeWithWind = (code, windSpeedKmh, windGustsKmh) => {
+	const baseToken = getWeatherGovTokenFromWmoCode(code);
+	const windDesc = getWindDescriptor(windSpeedKmh, windGustsKmh);
+
+	// Only use wind icon for non-precipitation conditions
+	// Precipitation codes: drizzle, rain, freezing rain, snow, sleet, thunderstorms
+	const precipitationCodes = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99];
+
+	if (windDesc && !precipitationCodes.includes(Number(code))) {
+		return `wind_${baseToken}`;
+	}
+	return baseToken;
+};
+
+const buildSyntheticIconUrlWithWind = (code, isDaytime, windSpeedKmh, windGustsKmh) => {
+	const token = getWeatherGovTokenFromWmoCodeWithWind(code, windSpeedKmh, windGustsKmh);
+	return withBasePath(`icons/land/${isDaytime ? 'day' : 'night'}/${token}`);
+};
+
+const getLargeIconFromWmoCodeWithWind = (code, isDaytime, windSpeedKmh, windGustsKmh) => {
+	const iconUrl = buildSyntheticIconUrlWithWind(code, isDaytime, windSpeedKmh, windGustsKmh);
+	return largeIcon(iconUrl, !isDaytime);
+};
+
+const getSmallIconFromWmoCodeWithWind = (code, isDaytime, windSpeedKmh, windGustsKmh) => {
+	const iconUrl = buildSyntheticIconUrlWithWind(code, isDaytime, windSpeedKmh, windGustsKmh);
+	return smallIcon(iconUrl, !isDaytime);
+};
+
 export {
 	largeIcon as getLargeIcon,
 	smallIcon as getSmallIcon,
 	hourlyIcon as getHourlyIcon,
 	getLargeIconFromWmoCode,
 	getSmallIconFromWmoCode,
+	getLargeIconFromWmoCodeWithWind,
+	getSmallIconFromWmoCodeWithWind,
 };

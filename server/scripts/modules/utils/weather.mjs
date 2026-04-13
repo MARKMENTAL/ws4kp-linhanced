@@ -9,7 +9,7 @@ const OPEN_METEO_FORECAST_PARAMETERS = [
 ].join('&');
 
 const OPEN_METEO_RADAR_OBSERVATION_PARAMETERS = [
-	'hourly=temperature_2m,weather_code,is_day',
+	'hourly=temperature_2m,weather_code,is_day,wind_speed_10m,wind_gusts_10m',
 	'forecast_days=1',
 	'timezone=auto',
 	'models=best_match',
@@ -119,6 +119,8 @@ const getOpenMeteoObservationSnapshot = async (lat, lon) => {
 		temperature: forecast.hourly.temperature_2m?.[nearestIndex] ?? null,
 		weatherCode: forecast.hourly.weather_code?.[nearestIndex] ?? 0,
 		isDay: Boolean(forecast.hourly.is_day?.[nearestIndex] ?? 1),
+		windSpeed: forecast.hourly.wind_speed_10m?.[nearestIndex] ?? 0,
+		windGusts: forecast.hourly.wind_gusts_10m?.[nearestIndex] ?? 0,
 		timezone: forecast.timezone,
 	};
 
@@ -131,8 +133,8 @@ const getOpenMeteoObservationSnapshot = async (lat, lon) => {
 };
 
 const weatherConditions = [
-	{ codes: [0], text: ['Clear sky'] },
-	{ codes: [1, 2, 3], text: ['Mainly clear', 'Partly cloudy', 'Overcast'] },
+	{ codes: [0], text: ['Clear'] },
+	{ codes: [1, 2, 3], text: ['Mostly Clear', 'Some Clouds', 'Overcast'] },
 	{ codes: [45, 48], text: ['Fog', 'Depositing rime fog'] },
 	{ codes: [51, 53, 55], text: ['Light Drizzle', 'Moderate Drizzle', 'Dense Drizzle'] },
 	{ codes: [56, 57], text: ['Light Freezing Drizzle', 'Dense Freezing Drizzle'] },
@@ -145,6 +147,32 @@ const weatherConditions = [
 	{ codes: [95], text: ['Thunderstorm'] },
 	{ codes: [96, 99], text: ['Thunderstorm with Slight Hail', 'Thunderstorm with Heavy Hail'] },
 ];
+
+// Wind descriptor thresholds (km/h)
+const getWindDescriptor = (windSpeedKmh, windGustsKmh) => {
+	// Use max of sustained wind or weighted gusts
+	const maxWind = Math.max(windSpeedKmh, (windGustsKmh || 0) * 0.8);
+
+	if (maxWind >= 56) return 'Very Windy';
+	if (maxWind >= 36) return 'Windy';
+	if (maxWind >= 21) return 'Breezy';
+	return null;
+};
+
+// Get condition text with wind descriptor
+const getConditionTextWithWind = (weatherCode, windSpeedKmh, windGustsKmh) => {
+	const baseCondition = getConditionText(weatherCode);
+	const windDesc = getWindDescriptor(windSpeedKmh, windGustsKmh);
+
+	if (windDesc) {
+		// For clear sky conditions, just use the wind descriptor
+		if (weatherCode === 0) {
+			return windDesc;
+		}
+		return `${baseCondition} ${windDesc}`;
+	}
+	return baseCondition;
+};
 
 const getConditionText = (code) => {
 	const condition = weatherConditions.find((item) => item.codes.includes(Number(code)));
@@ -229,4 +257,6 @@ export {
 	getOpenMeteoObservationSnapshot,
 	aggregateWeatherForecastData,
 	getConditionText,
+	getWindDescriptor,
+	getConditionTextWithWind,
 };

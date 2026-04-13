@@ -7,8 +7,8 @@ import { registerDisplay } from './navigation.mjs';
 import {
 	temperature, windSpeed, pressure, distanceKilometers, distanceMeters,
 } from './utils/units.mjs';
-import { getConditionText } from './utils/weather.mjs';
-import { getLargeIconFromWmoCode } from './icons.mjs';
+import { getConditionTextWithWind } from './utils/weather.mjs';
+import { getLargeIconFromWmoCodeWithWind } from './icons.mjs';
 
 class CurrentWeather extends WeatherDisplay {
 	constructor(navId, elemId) {
@@ -37,8 +37,12 @@ class CurrentWeather extends WeatherDisplay {
 	async drawCanvas() {
 		super.drawCanvas();
 
-		let condition = getConditionText(this.data.TextConditions);
-		if (condition.length > 15) {
+		let condition = getConditionTextWithWind(
+		this.data.TextConditions,
+		this.data.WindSpeedRaw,
+		this.data.WindGustRaw
+	);
+		if (condition.length > 23) {
 			condition = shortConditions(condition);
 		}
 
@@ -148,14 +152,21 @@ const parseData = (weatherParameters) => {
 		Visibility: visibilityConverter(currentForecast.visibility),
 		VisibilityUnit: visibilityConverter.units,
 		WindSpeed: windConverter(currentForecast.wind_speed_10m),
+		WindSpeedRaw: currentForecast.wind_speed_10m,
 		WindDirection: directionToNSEW(currentForecast.wind_direction_10m ?? 0),
 		Pressure: pressureConverter((currentForecast.pressure_msl ?? 0) * 100),
 		PressureDirection: currentForecast.pressureTrend,
 		Humidity: Math.round(currentForecast.relative_humidity_2m ?? 0),
 		WindGust: windConverter(currentForecast.wind_gusts_10m),
+		WindGustRaw: currentForecast.wind_gusts_10m,
 		WindUnit: windConverter.units,
 		TextConditions: Number(currentForecast.weather_code ?? 0),
-		Icon: getLargeIconFromWmoCode(currentForecast.weather_code, Boolean(currentForecast.is_day)),
+		Icon: getLargeIconFromWmoCodeWithWind(
+			currentForecast.weather_code,
+			Boolean(currentForecast.is_day),
+			currentForecast.wind_speed_10m,
+			currentForecast.wind_gusts_10m
+		),
 	};
 };
 

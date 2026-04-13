@@ -16,7 +16,7 @@
 
 			&.left {
 				font-family: 'Star4000 Extended';
-				font-size: 24pt;
+				font-size: 18pt;
 
 			}
 
@@ -62,6 +62,7 @@
 			img {
 				margin: 0 auto;
 				display: block;
+				width: 108px;
 			}
 		}
 
@@ -84,12 +85,13 @@
 		}
 
 		.location {
-			color: c.$title-color;
+			color: #ff0;
 			max-height: 32px;
 			margin-bottom: 10px;
 			padding-top: 4px;
 			overflow: hidden;
 			text-wrap: nowrap;
+			padding-left: 15px;
 		}
 	}
 }
@@ -100,7 +102,6 @@
 			.col {
 				&.left {
 					margin-top: 35px;
-					font-size: 20pt;
 				}
 
 				&.right {

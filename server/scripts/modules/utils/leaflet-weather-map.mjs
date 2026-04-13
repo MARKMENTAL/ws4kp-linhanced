@@ -1,6 +1,6 @@
 import { safePromiseAll } from './fetch.mjs';
 import { loadData } from './data-loader.mjs';
-import { getSmallIconFromWmoCode } from '../icons.mjs';
+import { getSmallIconFromWmoCodeWithWind } from '../icons.mjs';
 import { getOpenMeteoObservationSnapshot } from './weather.mjs';
 import { temperature } from './units.mjs';
 import { withBasePath } from './base-path.mjs';
@@ -107,7 +107,12 @@ const selectNearbyCities = (map, sourceLocation, cities, options = {}) => {
 
 const buildNearbyWeatherMarker = (city, observation) => {
 	const temperatureConverter = temperature();
-	const icon = getSmallIconFromWmoCode(observation.weatherCode, observation.isDay);
+	const icon = getSmallIconFromWmoCodeWithWind(
+		observation.weatherCode,
+		observation.isDay,
+		observation.windSpeed,
+		observation.windGusts
+	);
 	const markerHtml = `
 		<div class="nearby-weather-marker-inner">
 			<div class="city">${city.name}</div>
