@@ -77,6 +77,7 @@ Current themes include:
 * `oceanview`
 * `slackware`
 * `twc-linhanced`
+* `twc-stockholm`
 
 Currently supported themed assets include:
 
