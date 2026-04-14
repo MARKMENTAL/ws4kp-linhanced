@@ -1,0 +1,57 @@
+@use 'shared/_colors' as c;
+@use 'shared/_utils' as u;
+
+.weather-display .main.ground-view {
+	&.main {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		padding: 20px 24px 18px;
+
+		.hidden {
+			display: none;
+		}
+
+		.ground-view-media {
+			width: 100%;
+			height: 100%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex: 1 1 auto;
+			min-height: 0;
+			margin-right: 60px;
+			margin-top: 30px;
+		}
+
+		.ground-view-image {
+			display: block;
+			max-width: 300px;
+			max-height: 150px;
+			object-fit: contain;
+			border: 2px solid hsl(0deg 0% 100% / 35%);
+			background: #000;
+		}
+
+		.ground-view-label,
+		.ground-view-empty {
+			width: 100%;
+			text-align: center;
+			font-family: 'Star4000';
+			font-size: 15pt;
+			color: #ff0;
+			padding: 10px;
+			margin-right: 80px;
+			text-shadow: 3px 3px 0 #000,-1.5px -1.5px 0 #000,0 -1.5px 0 #000,1.5px -1.5px 0 #000,1.5px 0 0 #000,1.5px 1.5px 0 #000,0 1.5px 0 #000,-1.5px 1.5px 0 #000,-1.5px 0 0 #000;
+		}
+
+		.ground-view-empty {
+			flex: 1 1 auto;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+	}
+}

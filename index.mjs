@@ -20,6 +20,7 @@ import OVERRIDES from './src/overrides.mjs';
 import cache from './proxy/cache.mjs';
 import devTools from './src/com.chrome.devtools.mjs';
 import { discoverThemes } from './src/theme-discovery.mjs';
+import { findNearestWindyWebcam, loadWindyApiKey } from './src/windy-webcams.mjs';
 
 const execAsync = promisify(exec);
 
@@ -247,6 +248,37 @@ if (!process.env?.STATIC) {
 			res.json({
 				success: false,
 				stories: [],
+				error: error.message,
+			});
+		}
+	});
+
+	app.get('/api/ground-view', async (req, res) => {
+		try {
+			const lat = parseFloat(req.query.lat);
+			const lon = parseFloat(req.query.lon);
+			const city = String(req.query.city ?? '').trim();
+
+			if (Number.isNaN(lat) || Number.isNaN(lon) || !city) {
+				res.status(400).json({
+					success: false,
+					webcam: null,
+					error: 'Missing or invalid lat/lon/city',
+				});
+				return;
+			}
+
+			const apiKey = await loadWindyApiKey();
+			const webcam = await findNearestWindyWebcam(lat, lon, city, apiKey);
+
+			res.json({
+				success: true,
+				webcam,
+			});
+		} catch (error) {
+			res.status(500).json({
+				success: false,
+				webcam: null,
 				error: error.message,
 			});
 		}

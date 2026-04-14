@@ -17,3 +17,4 @@ dist/*
 #environment variables
 .env
 nohup.out
+windy-*.txt

@@ -77,6 +77,7 @@ const mjsSources = [
 	'server/scripts/modules/hourly-graph.mjs',
 	'server/scripts/modules/localforecast.mjs',
 	'server/scripts/modules/radar.mjs',
+	'server/scripts/modules/groundview.mjs',
 	'server/scripts/modules/regionalforecast.mjs',
 	'server/scripts/modules/travelforecast.mjs',
 	'server/scripts/modules/progress.mjs',
