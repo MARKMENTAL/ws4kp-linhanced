@@ -90,7 +90,7 @@ const fetchAsync = async (_url, responseType, _params = {}) => {
 	// - Static mode (direct requests): Only add User-Agent for api.weather.gov, avoiding CORS preflight issues with other services
 	const shouldAddUserAgent = !shouldExcludeUserAgent && (window.WS4KP_SERVER_AVAILABLE || _url.toString().match(/api\.weather\.gov/));
 	if (shouldAddUserAgent) {
-		headers['user-agent'] = 'Weatherstar 4000+; weatherstar@netbymatt.com';
+		headers['user-agent'] = 'WeatherStar 4000+: Linhanced; marky611@gmail.com';
 	}
 
 	// combine default and provided parameters

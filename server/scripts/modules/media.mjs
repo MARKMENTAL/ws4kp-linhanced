@@ -381,6 +381,7 @@ const screenAudioMap = {
 	'travel': 'travel-forecast.mp3',
 	'hourly-graph': 'hourly-graph.mp3',
 	'hourly': 'hourly-forecast.mp3',
+	'server-observations': 'server-obs.mp3',
 	'current-weather': 'current-conditions.mp3',
 };
 

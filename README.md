@@ -1,5 +1,3 @@
-![Weatherstar 4000+ Current Conditions](https://github.com/netbymatt/ws4kp/blob/main/server/images/social/1200x600.png)
-
 # ws4kp-linhanced
 
 `ws4kp-linhanced` is a Linux-focused fork of [`netbymatt/ws4kp`](https://github.com/netbymatt/ws4kp) by `markmental`.

@@ -3,7 +3,7 @@ import https from 'https';
 
 const get = (url) => new Promise((resolve, reject) => {
 	const headers = {};
-	headers['user-agent'] = '(WeatherStar 4000+ data generator, ws4000@netbymatt.com)';
+	headers['user-agent'] = '(WeatherStar 4000+: Linhanced data generator, marky611@gmail.com)';
 
 	https.get(url, {
 		headers,

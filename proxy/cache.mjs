@@ -311,7 +311,7 @@ class HttpCache {
 	async makeUpstreamRequest(req, res, fullUrl, options = {}, cacheResult = null) {
 		return new Promise((resolve) => {
 			const headers = {
-				'user-agent': options.userAgent || '(WeatherStar 4000+, ws4000@netbymatt.com)',
+				'user-agent': options.userAgent || '(WeatherStar 4000+: Linhanced, marky611@gmail.com)',
 				accept: req.headers?.accept || '*/*',
 				...options.headers,
 			};
