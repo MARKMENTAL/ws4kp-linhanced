@@ -3,7 +3,12 @@ import noSleep from './utils/nosleep.mjs';
 import STATUS from './status.mjs';
 import { wrap } from './utils/calc.mjs';
 import { safeJson } from './utils/fetch.mjs';
-import { getPoint, getOpenMeteoForecast, aggregateWeatherForecastData } from './utils/weather.mjs';
+import {
+	getPoint,
+	getOpenMeteoForecast,
+	aggregateWeatherForecastData,
+	getAggregatedNoaaForecast,
+} from './utils/weather.mjs';
 import { debugFlag } from './utils/debug.mjs';
 import settings from './settings.mjs';
 import { stopScreenAudio } from './media.mjs';
@@ -118,11 +123,6 @@ const message = (data) => {
 
 const getWeather = async (latLon, haveDataCallback) => {
 	const location = getStoredLocationMetadata() ?? getFallbackLocation(latLon);
-	const openMeteoForecast = await getOpenMeteoForecast(latLon.lat, latLon.lon);
-	if (!openMeteoForecast) return;
-
-	const aggregatedForecast = aggregateWeatherForecastData(openMeteoForecast);
-	if (!aggregatedForecast) return;
 
 	if (typeof haveDataCallback === 'function') haveDataCallback(location);
 
@@ -131,9 +131,40 @@ const getWeather = async (latLon, haveDataCallback) => {
 		let point = null;
 		let stations = null;
 		let stationId = '';
+		let aggregatedForecast = null;
+		let resolvedTimeZone = '';
+		let primaryForecastSource = '';
+		let openMeteoForecast = null;
 
 		if (noaaEligibleLocation) {
 			point = await getPoint(latLon.lat, latLon.lon);
+		}
+
+		if (point?.properties) {
+			resolvedTimeZone = point.properties.timeZone ?? '';
+		}
+
+		if (point?.properties) {
+			const noaaForecast = await getAggregatedNoaaForecast(point.properties);
+			if (noaaForecast?.validation?.accepted) {
+				aggregatedForecast = noaaForecast.aggregatedForecast;
+				primaryForecastSource = 'noaa';
+			} else if (debugFlag('verbose-failures') && noaaForecast?.validation) {
+				console.warn(`NOAA forecast rejected for ${latLon.lat},${latLon.lon}: ${noaaForecast.validation.reasons.join(', ')}`);
+			}
+		}
+
+		if (!aggregatedForecast || !resolvedTimeZone) {
+			openMeteoForecast = await getOpenMeteoForecast(latLon.lat, latLon.lon);
+			if (!openMeteoForecast) return;
+			if (!aggregatedForecast) {
+				aggregatedForecast = aggregateWeatherForecastData(openMeteoForecast);
+				if (!aggregatedForecast) return;
+				primaryForecastSource = 'open-meteo';
+			}
+			if (!resolvedTimeZone) {
+				resolvedTimeZone = openMeteoForecast.timezone;
+			}
 		}
 
 		if (noaaEligibleLocation && point?.properties?.observationStations) {
@@ -158,7 +189,7 @@ const getWeather = async (latLon, haveDataCallback) => {
 		weatherParameters.state = state;
 		weatherParameters.country = location.country ?? '';
 		weatherParameters.countryCode = location.countryCode ?? '';
-		weatherParameters.timeZone = openMeteoForecast.timezone;
+		weatherParameters.timeZone = resolvedTimeZone;
 		weatherParameters.forecast = aggregatedForecast;
 		weatherParameters.supportsNoaaAlerts = supportsNoaaAlerts;
 		weatherParameters.supportsNoaaDisplays = !!(noaaEligibleLocation && point && stations?.features?.length);
@@ -169,6 +200,8 @@ const getWeather = async (latLon, haveDataCallback) => {
 		weatherParameters.forecastGridData = point?.properties?.forecastGridData ?? '';
 		weatherParameters.stations = stations?.features ?? [];
 		weatherParameters.relativeLocation = point?.properties?.relativeLocation?.properties ?? null;
+		weatherParameters.primaryForecastSource = primaryForecastSource;
+		weatherParameters.primaryObservationSource = '';
 
 		// update the main process for display purposes
 		populateWeatherParameters(weatherParameters, point?.properties);

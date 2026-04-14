@@ -7,7 +7,7 @@ import { registerDisplay } from './navigation.mjs';
 import {
 	temperature, windSpeed, pressure, distanceKilometers, distanceMeters,
 } from './utils/units.mjs';
-import { getConditionTextWithWind } from './utils/weather.mjs';
+import { getConditionTextWithWind, getBestUsCurrentObservation } from './utils/weather.mjs';
 import { getLargeIconFromWmoCodeWithWind } from './icons.mjs';
 
 class CurrentWeather extends WeatherDisplay {
@@ -17,7 +17,7 @@ class CurrentWeather extends WeatherDisplay {
 
 	async getData(weatherParameters, refresh) {
 		const superResult = super.getData(weatherParameters, refresh);
-		this.data = parseData(this.weatherParameters);
+		this.data = await parseData(this.weatherParameters);
 
 		if (!this.data) {
 			if (this.isEnabled) this.setStatus(STATUS.failed);
@@ -130,7 +130,51 @@ const getCurrentWeatherByHourFromTime = (data) => {
 	return closestTime;
 };
 
-const parseData = (weatherParameters) => {
+const parseData = async (weatherParameters) => {
+	if (weatherParameters.supportsNoaaDisplays && weatherParameters.stationId) {
+		const observationResult = await getBestUsCurrentObservation(weatherParameters);
+		if (observationResult?.observation) {
+			weatherParameters.primaryObservationSource = observationResult.source;
+			const currentForecast = getCurrentWeatherByHourFromTime(weatherParameters) ?? {};
+			const observation = observationResult.observation;
+			const temperatureConverter = temperature();
+			const windConverter = windSpeed();
+			const pressureConverter = pressure();
+			const ceilingConverter = distanceMeters();
+			const visibilityConverter = distanceKilometers();
+			const ceilingMeters = Math.max(0, ((observation.temperature ?? 0) - (observation.dewPoint ?? 0)) * 68);
+			const pressureValue = observation.pressure ?? currentForecast.pressure_msl ?? null;
+			return {
+				city: weatherParameters.city,
+				timeZone: weatherParameters.timeZone,
+				Temperature: temperatureConverter(observation.temperature),
+				TemperatureUnit: temperatureConverter.units,
+				DewPoint: temperatureConverter(observation.dewPoint),
+				Ceiling: ceilingConverter(ceilingMeters),
+				CeilingUnit: ceilingConverter.units,
+				Visibility: visibilityConverter(observation.visibility),
+				VisibilityUnit: visibilityConverter.units,
+				WindSpeed: windConverter(observation.windSpeed),
+				WindSpeedRaw: observation.windSpeed,
+				WindDirection: directionToNSEW(observation.windDirection ?? 0),
+				Pressure: pressureValue === null ? '-' : pressureConverter(pressureValue * 100),
+				PressureDirection: currentForecast.pressureTrend ?? 'Steady',
+				Humidity: Math.round(observation.relativeHumidity ?? currentForecast.relative_humidity_2m ?? 0),
+				WindGust: windConverter(observation.windGust),
+				WindGustRaw: observation.windGust,
+				WindUnit: windConverter.units,
+				TextConditions: Number(observation.weatherCode ?? 0),
+				Icon: getLargeIconFromWmoCodeWithWind(
+					observation.weatherCode,
+					Boolean(observation.isDay),
+					observation.windSpeed,
+					observation.windGust
+				),
+			};
+		}
+	}
+
+	weatherParameters.primaryObservationSource = 'forecast';
 	const currentForecast = getCurrentWeatherByHourFromTime(weatherParameters);
 	if (!currentForecast) return null;
 
