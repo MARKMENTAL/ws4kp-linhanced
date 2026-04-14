@@ -47,6 +47,7 @@ Major features currently in this fork:
 * global RainViewer radar on a cached world basemap
 * global `Regional Observations` and nearby-city displays backed by expanded worldwide city coverage
 * `Latest Observations` screen for nearby city temperatures, conditions, and wind
+* `Ground View` screen powered by nearby Windy webcams (requires API key, see below)
 * Travel Forecast rebuilt around region buckets with a global fallback
 * optional screen-specific audio playback for supported displays
 * wind/gust-based condition inference for better condition names and icon matches when upstream data is too generic
@@ -57,8 +58,10 @@ Major features currently in this fork:
 
 Some NOAA-only products are still retained where they remain useful and there is no replacement yet:
 
-* Hazards
-* SPC Outlook
+* Hazards (US only)
+* SPC Outlook (US only)
+
+For locations outside the US, a derived alert system provides best-effort hazard warnings based on available meteorological data when official NOAA products do not apply.
 
 ## Themes
 
@@ -107,6 +110,14 @@ Then open:
 http://localhost:8080/
 ```
 
+## API Keys
+
+### Windy Webcams (Ground View)
+
+The `Ground View` screen requires a Windy Webcams API key. Create a file named `windy-api-key.txt` in the project root and paste your API key as plain text. If this file is missing, the `Ground View` screen will not work.
+
+You can obtain a free API key from [Windy Webcams API](https://api.windy.com/webcams).
+
 ## Running Modes
 
 This fork supports two main runtime styles.
@@ -141,7 +152,9 @@ Or upload the generated `dist/` directory to your web server after running:
 npm run build
 ```
 
-The static build has been adjusted so frontend-generated paths no longer assume deployment at `/`, which makes subdirectory hosting more practical. **Also, features that require a backend server like the on-disk cache and the fastfetch + LWN Linux News integration will not work when running the static build by itself.**
+The static build has been adjusted so frontend-generated paths no longer assume deployment at `/`, which makes subdirectory hosting more practical. **Also, features that require a backend server like the on-disk cache, Fastfetch-backed Server Observations, LWN Linux News, and `Ground View` will not work when running the static build by itself.**
+
+The public demo at [https://mentalnet.xyz/ws4kp-linhanced-demo/](https://mentalnet.xyz/ws4kp-linhanced-demo/) is intentionally served as a static build, so the `Linux News`, `Server Observations`, and `Ground View` screens will not work there.
 
 ## International Support
 
