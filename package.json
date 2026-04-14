@@ -5,7 +5,7 @@
 	"main": "index.mjs",
 	"type": "module",
 	"scripts": {
-		"start": "node index.mjs",
+		"start": "npm run build && node index.mjs",
 		"stop": "pkill -f 'node index.mjs' || echo 'No process found'",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"build:travelcities": "node datagenerators/travelcities.mjs",
