@@ -77,6 +77,7 @@ Current themes include:
 * `oceanview`
 * `slackware`
 * `twc-linhanced`
+* `twc-classic`
 * `twc-stockholm`
 
 Currently supported themed assets include:
@@ -281,4 +282,4 @@ This project should **not** be relied upon in life-threatening weather situation
 
 Internet services fail, upstream data can be delayed, and browser-based applications are not a substitute for dedicated alerting systems.
 
-The WeatherSTAR 4000 name and original technology belong to The Weather Channel. This project is a fan-made, non-commercial recreation and reinterpretation.
+The WeatherSTAR 4000 name, Weather Channel logo and original technology belong to The Weather Channel. This project is a fan-made, non-commercial recreation and reinterpretation and is not affiliated with or run by the Weather Channel.
