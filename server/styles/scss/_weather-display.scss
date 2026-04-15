@@ -27,20 +27,20 @@
 		z-index: 20;
 
 		.title {
-			color: c.$title-color;
-			@include u.text-shadow(3px, 1.5px);
+			color: #eebe4b;
+			text-shadow: 3px 3px 0 #000,-1.5px -1.5px 0 #000,0 -1.5px 0 #000,1.5px -1.5px 0 #000,1.5px 0 0 #000,1.5px 1.5px 0 #000,0 1.5px 0 #000,-1.5px 1.5px 0 #000,-1.5px 0 0 #000;
 			font-family: 'Star4000';
 			font-size: 24pt;
 			position: absolute;
 			width: 250px;
 
 			&.single {
-				left: 170px;
-				top: 25px;
+				left: 138px;
+				top: 40px;
 			}
 
 			&.dual {
-				left: 170px;
+				left: 144px;
 
 				&>div {
 					position: absolute;
@@ -70,9 +70,7 @@
 			left: 356px;
 		}
 
-		.title.single {
-			top: 40px;
-		}
+
 
 		.date-time {
 			white-space: pre;
