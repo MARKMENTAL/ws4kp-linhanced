@@ -10,8 +10,9 @@ const SEVERITY_RANK = {
 };
 
 const RULE_PRIORITY = {
-	tropical: 6,
-	thunderstorm: 5,
+	tropical: 7,
+	thunderstorm: 6,
+	fog: 5,
 	freezing: 4,
 	snow: 3,
 	rain: 2,
@@ -23,11 +24,13 @@ const WEATHER_CODES = {
 	snow: new Set([71, 73, 75, 77, 85, 86]),
 	thunderstorm: new Set([95, 96, 99]),
 	rain: new Set([51, 53, 55, 61, 63, 65, 80, 81, 82]),
+	fog: new Set([45, 48]),
 };
 
 const thresholds = {
 	lowVisibilitySevere: 5 * METERS_PER_MILE,
 	lowVisibilityExtreme: 2 * METERS_PER_MILE,
+	denseFogVisibility: 1000,
 	gustSevere: 20 * KPH_PER_MPH,
 	gustExtreme: 35 * KPH_PER_MPH,
 	highWindSevere: 40 * KPH_PER_MPH,
@@ -85,15 +88,22 @@ const getWorstHour = (hours, evaluator) => hours.reduce((worst, hour) => {
 const evaluateThunderstorm = (hours) => getWorstHour(hours, (hour) => {
 	const code = Number(hour.weather_code ?? 0);
 	if (!WEATHER_CODES.thunderstorm.has(code)) return null;
+	const visibility = hour.visibility ?? Number.POSITIVE_INFINITY;
+	const lowVisibility = visibility < thresholds.lowVisibilitySevere;
+
 	if (code === 96 || code === 99) {
 		return {
 			severity: 'Extreme',
-			description: 'Thunderstorms with hail are possible in the next several hours and may create dangerous outdoor conditions.',
+			description: lowVisibility
+				? 'Thunderstorms with hail and very low visibility are expected in the next several hours and may create dangerous outdoor and travel conditions.'
+				: 'Thunderstorms with hail are possible in the next several hours and may create dangerous outdoor conditions.',
 		};
 	}
 	return {
 		severity: 'Severe',
-		description: 'Thunderstorms are possible in the next several hours and may create hazardous outdoor conditions.',
+		description: lowVisibility
+			? 'Thunderstorms with reduced visibility are expected in the next several hours and may create hazardous outdoor and travel conditions.'
+			: 'Thunderstorms are possible in the next several hours and may create hazardous outdoor conditions.',
 	};
 });
 
@@ -204,11 +214,34 @@ const evaluateWind = (hours) => getWorstHour(hours, (hour) => {
 	return null;
 });
 
+const evaluateFog = (hours) => getWorstHour(hours, (hour) => {
+	const code = Number(hour.weather_code ?? 0);
+	if (!WEATHER_CODES.fog.has(code)) return null;
+	const visibility = hour.visibility ?? Number.POSITIVE_INFINITY;
+
+	if (visibility <= thresholds.denseFogVisibility) {
+		return {
+			severity: 'Extreme',
+			description: 'Dense fog with very low visibility is expected in the next several hours and may create dangerous travel conditions.',
+			event: 'Dense Fog Warning',
+		};
+	}
+	if (visibility < thresholds.lowVisibilitySevere) {
+		return {
+			severity: 'Severe',
+			description: 'Reduced visibility with mist or low cloud is expected in the next several hours and may create hazardous travel conditions.',
+			event: 'Reduced Visibility Advisory',
+		};
+	}
+	return null;
+});
+
 const deriveHazards = (weatherParameters) => {
 	const upcomingHours = getUpcomingHours(weatherParameters);
 	if (upcomingHours.length === 0) return [];
 	const tropicalCandidate = evaluateTropical(upcomingHours);
 	const thunderstormCandidate = evaluateThunderstorm(upcomingHours);
+	const fogCandidate = evaluateFog(upcomingHours);
 	const freezingCandidate = evaluateFreezing(upcomingHours);
 	const snowCandidate = evaluateSnow(upcomingHours);
 	const rainCandidate = evaluateRain(upcomingHours);
@@ -225,6 +258,11 @@ const deriveHazards = (weatherParameters) => {
 			id: 'derived-severe-weather-alert-thunderstorm',
 			priority: RULE_PRIORITY.thunderstorm,
 			...thunderstormCandidate,
+		}),
+		fogCandidate && buildDerivedHazard({
+			id: 'derived-severe-weather-alert-fog',
+			priority: RULE_PRIORITY.fog,
+			...fogCandidate,
 		}),
 		freezingCandidate && buildDerivedHazard({
 			id: 'derived-severe-weather-alert-freezing',
