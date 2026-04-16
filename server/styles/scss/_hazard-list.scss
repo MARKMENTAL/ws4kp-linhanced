@@ -1,0 +1,89 @@
+@use 'shared/_colors' as c;
+@use 'shared/_utils' as u;
+
+.weather-display .main.hazard-list {
+	&.main {
+		padding-top: 18px;
+
+		.column-headers {
+			display: flex;
+			font-family: 'Star4000';
+			font-size: 14pt;
+			font-weight: bold;
+			color: #ff0;
+			width: 70%;
+			margin: 4px auto 2px;
+			padding-top: 20px;
+			text-shadow: 3px 3px 0 #000,-1.5px -1.5px 0 #000,0 -1.5px 0 #000,1.5px -1.5px 0 #000,1.5px 0 0 #000,1.5px 1.5px 0 #000,0 1.5px 0 #000,-1.5px 1.5px 0 #000,-1.5px 0 0 #000;
+
+			.location {
+				width: 34%;
+			}
+
+			.hazard {
+				width: 30%;
+				text-align: center;
+			}
+
+			.date {
+				width: 22%;
+				text-align: center;
+			}
+
+			.ongoing {
+				width: 14%;
+				text-align: right;
+				padding-right: 4px;
+			}
+		}
+
+		.hazard-list-rows {
+			width: 70%;
+			margin: 0 auto;
+
+			.hazard-list-row {
+				display: flex;
+				font-family: 'Star4000';
+				font-size: 14pt;
+				line-height: 1.4;
+				margin-bottom: 4px;
+
+				@include u.text-shadow();
+
+				&.template {
+					display: none;
+				}
+
+				.location {
+					width: 34%;
+					overflow: visible;
+					text-overflow: ellipsis;
+					white-space: nowrap;
+					color: #fff;
+				}
+
+				.hazard {
+					width: 30%;
+					text-align: center;
+					color: c.$title-color;
+					overflow: hidden;
+					text-overflow: ellipsis;
+					white-space: nowrap;
+				}
+
+				.date {
+					width: 22%;
+					text-align: center;
+					color: #fff;
+				}
+
+				.ongoing {
+					width: 14%;
+					text-align: right;
+					padding-right: 4px;
+					color: #fff;
+				}
+			}
+		}
+	}
+}

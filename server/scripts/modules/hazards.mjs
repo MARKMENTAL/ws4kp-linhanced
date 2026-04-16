@@ -129,6 +129,9 @@ class Hazards extends WeatherDisplay {
 			if (this.isEnabled) {
 				this.drawLongCanvas();
 			}
+
+			// Sync hazards to backend history
+			await this.syncHazardHistory();
 		} catch (error) {
 			console.error(`Unexpected Active Alerts error: ${error.message}`);
 			stopAlertTone();
@@ -262,6 +265,55 @@ class Hazards extends WeatherDisplay {
 			// data not available, put it into the data callback queue
 			this.getDataCallbacks.push(() => resolve(this.data));
 		});
+	}
+
+	// Sync current hazards to backend history
+	async syncHazardHistory() {
+		try {
+			// Skip if no weather parameters available
+			if (!this.weatherParameters) return;
+
+			// Format location
+			const { city, state, country, countryCode } = this.weatherParameters;
+			const location = this.formatLocationLabel(city, state, country, countryCode);
+
+			// Normalize hazards for the API
+			const hazards = (this.data || []).map((hazard) => ({
+				id: hazard.id,
+				hazardType: hazard.properties?.event || 'Unknown',
+				severity: hazard.properties?.severity || 'Unknown',
+				source: hazard.properties?.senderName?.includes('NOAA') ? 'noaa' : 'derived',
+			}));
+
+			// Send to backend
+			await fetch('/api/hazard-history', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ location, hazards }),
+			});
+		} catch (error) {
+			// Silently fail - hazard history is non-critical
+			if (debugFlag('verbose-failures')) {
+				console.warn('Failed to sync hazard history:', error.message);
+			}
+		}
+	}
+
+	// Format location label for history
+	formatLocationLabel(city, state, country, countryCode) {
+		const cleanCity = city?.trim() || 'Unknown';
+
+		// US locations: "City, State"
+		if (countryCode === 'US' || countryCode === 'USA') {
+			const cleanState = state?.trim();
+			return cleanState ? `${cleanCity}, ${cleanState}` : cleanCity;
+		}
+
+		// Non-US locations: "City, Country"
+		const cleanCountry = country?.trim();
+		return cleanCountry ? `${cleanCity}, ${cleanCountry}` : cleanCity;
 	}
 }
 

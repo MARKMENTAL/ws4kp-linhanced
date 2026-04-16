@@ -9,6 +9,7 @@ import settings from './modules/settings.mjs';
 import './modules/utils/theme.mjs';
 import './modules/latestobservations.mjs';
 import './modules/groundview.mjs';
+import './modules/hazard-list.mjs';
 import AutoComplete from './modules/autocomplete.mjs';
 import { loadAllData } from './modules/utils/data-loader.mjs';
 import { debugFlag } from './modules/utils/debug.mjs';

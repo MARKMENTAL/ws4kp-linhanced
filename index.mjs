@@ -21,6 +21,7 @@ import cache from './proxy/cache.mjs';
 import devTools from './src/com.chrome.devtools.mjs';
 import { discoverThemes } from './src/theme-discovery.mjs';
 import { findNearestWindyWebcam, loadWindyApiKey } from './src/windy-webcams.mjs';
+import { getHistory, updateHistory } from './src/hazard-history.mjs';
 
 const execAsync = promisify(exec);
 
@@ -96,6 +97,9 @@ const { themes, themeAssets } = await discoverThemes();
 
 const app = express();
 const port = process.env.WS4KP_PORT ?? 8080;
+
+// Enable JSON parsing for API endpoints
+app.use(express.json());
 
 // Set X-Weatherstar header globally for playlist fallback detection
 app.use((req, res, next) => {
@@ -279,6 +283,48 @@ if (!process.env?.STATIC) {
 			res.status(500).json({
 				success: false,
 				webcam: null,
+				error: error.message,
+			});
+		}
+	});
+
+	// Hazard History API endpoints
+	app.get('/api/hazard-history', async (req, res) => {
+		try {
+			const history = await getHistory();
+			res.json({
+				success: true,
+				history,
+			});
+		} catch (error) {
+			res.status(500).json({
+				success: false,
+				history: [],
+				error: error.message,
+			});
+		}
+	});
+
+	app.post('/api/hazard-history', async (req, res) => {
+		try {
+			const { location, hazards } = req.body;
+
+			if (!location || !Array.isArray(hazards)) {
+				res.status(400).json({
+					success: false,
+					error: 'Missing or invalid location/hazards',
+				});
+				return;
+			}
+
+			const history = await updateHistory({ location, hazards });
+			res.json({
+				success: true,
+				history,
+			});
+		} catch (error) {
+			res.status(500).json({
+				success: false,
 				error: error.message,
 			});
 		}
