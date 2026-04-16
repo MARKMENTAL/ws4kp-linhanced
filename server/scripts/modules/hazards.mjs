@@ -274,8 +274,11 @@ class Hazards extends WeatherDisplay {
 			if (!this.weatherParameters) return;
 
 			// Format location
-			const { city, state, country, countryCode } = this.weatherParameters;
+			const { city, state, country, countryCode, latitude, longitude } = this.weatherParameters;
 			const location = this.formatLocationLabel(city, state, country, countryCode);
+
+			// Create stable location key from lat/lon (rounded to 3 decimal places ~111m precision)
+			const locationKey = `${parseFloat(latitude).toFixed(3)},${parseFloat(longitude).toFixed(3)}`;
 
 			// Normalize hazards for the API
 			const hazards = (this.data || []).map((hazard) => ({
@@ -291,7 +294,7 @@ class Hazards extends WeatherDisplay {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ location, hazards }),
+				body: JSON.stringify({ location, locationKey, hazards }),
 			});
 		} catch (error) {
 			// Silently fail - hazard history is non-critical

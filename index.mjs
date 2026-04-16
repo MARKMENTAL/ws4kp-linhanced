@@ -307,17 +307,17 @@ if (!process.env?.STATIC) {
 
 	app.post('/api/hazard-history', async (req, res) => {
 		try {
-			const { location, hazards } = req.body;
+			const { location, locationKey, hazards } = req.body;
 
-			if (!location || !Array.isArray(hazards)) {
+			if (!location || !locationKey || !Array.isArray(hazards)) {
 				res.status(400).json({
 					success: false,
-					error: 'Missing or invalid location/hazards',
+					error: 'Missing or invalid location/locationKey/hazards',
 				});
 				return;
 			}
 
-			const history = await updateHistory({ location, hazards });
+			const history = await updateHistory({ location, locationKey, hazards });
 			res.json({
 				success: true,
 				history,

@@ -83,28 +83,34 @@ const formatLocation = (city, state, country, countryCode) => {
 /**
  * Update hazard history with current active hazards for a location
  * @param {Object} payload - Request payload
- * @param {string} payload.location - Formatted location label
+ * @param {string} payload.location - Formatted location label (for display)
+ * @param {string} payload.locationKey - Stable location key from lat/lon (for matching)
  * @param {Array} payload.hazards - Array of active hazards
  * @returns {Array} Updated history
  */
 const updateHistory = async (payload) => {
-	const { location, hazards = [] } = payload;
+	const { location, locationKey, hazards = [] } = payload;
 	
 	// Load existing history
 	let history = await loadHistory();
 	const now = new Date().toISOString();
 	
+	// Use locationKey for matching if provided, fall back to location for backward compatibility
+	const matchKey = locationKey || location;
+	
 	// Create a set of active hazard keys for this location
 	const activeKeys = new Set();
 	hazards.forEach((hazard) => {
-		const key = generateKey(location, hazard.id);
+		const key = generateKey(matchKey, hazard.id);
 		activeKeys.add(key);
 	});
 	
 	// Mark previously ongoing hazards for this location as ended if no longer active
 	history = history.map((entry) => {
 		// Only process entries for this location
-		if (entry.location !== location) return entry;
+		// Use locationKey for matching if available, fall back to location for backward compatibility
+		const entryMatchKey = entry.locationKey || entry.location;
+		if (entryMatchKey !== matchKey) return entry;
 		
 		// If this entry is ongoing but not in the current active set, mark it as ended
 		if (entry.ongoing && !activeKeys.has(entry.key)) {
@@ -119,7 +125,7 @@ const updateHistory = async (payload) => {
 	
 	// Add or update active hazards
 	hazards.forEach((hazard) => {
-		const key = generateKey(location, hazard.id);
+		const key = generateKey(matchKey, hazard.id);
 		const existingIndex = history.findIndex((entry) => entry.key === key);
 		
 		if (existingIndex >= 0) {
@@ -136,6 +142,7 @@ const updateHistory = async (payload) => {
 			history.push({
 				key,
 				location,
+				locationKey: matchKey,
 				hazardType: hazard.hazardType,
 				encounteredAt: now,
 				lastSeenAt: now,
