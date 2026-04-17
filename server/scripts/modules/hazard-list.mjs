@@ -2,6 +2,7 @@
 import STATUS from './status.mjs';
 import WeatherDisplay from './weatherdisplay.mjs';
 import { registerDisplay } from './navigation.mjs';
+import { withBasePath } from './utils/base-path.mjs';
 
 class HazardList extends WeatherDisplay {
 	constructor(navId, elemId) {
@@ -14,7 +15,7 @@ class HazardList extends WeatherDisplay {
 
 		try {
 			// Fetch hazard history from backend
-			const response = await fetch('/api/hazard-history');
+			const response = await fetch(withBasePath('api/hazard-history'));
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}

@@ -8,6 +8,7 @@ import WeatherDisplay from './weatherdisplay.mjs';
 import { registerDisplay } from './navigation.mjs';
 import calculateScrollTiming from './utils/scroll-timing.mjs';
 import { debugFlag } from './utils/debug.mjs';
+import { withBasePath } from './utils/base-path.mjs';
 
 const hazardLevels = {
 	Extreme: 10,
@@ -289,7 +290,7 @@ class Hazards extends WeatherDisplay {
 			}));
 
 			// Send to backend
-			await fetch('/api/hazard-history', {
+			await fetch(withBasePath('api/hazard-history'), {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
