@@ -63,7 +63,7 @@ class CurrentWeather extends WeatherDisplay {
 			dewpoint: this.data.DewPoint + String.fromCharCode(176),
 			ceiling: this.data.Ceiling === 0 ? 'Unlimited' : `${this.data.Ceiling}${this.data.CeilingUnit}`,
 			visibility: `${this.data.Visibility}${this.data.VisibilityUnit}`,
-			pressure: `${this.data.Pressure} ${this.data.PressureDirection}`,
+			pressure: this.data.PressureDirection ? `${this.data.Pressure} ${this.data.PressureDirection}` : this.data.Pressure,
 			icon: { type: 'img', src: this.data.Icon },
 		};
 
@@ -121,10 +121,15 @@ const getCurrentWeatherByHourFromTime = (data) => {
 			return currDiff < prevDiff ? curr : prev;
 		}, availableTimes[0]);
 
-	const diff = (closestTime.pressure_msl ?? 0) - (previousHour.pressure_msl ?? 0);
-	let pressureTrend = 'Steady';
-	if (diff > 0.5) pressureTrend = 'Rising';
-	if (diff < -0.5) pressureTrend = 'Falling';
+	const currentPressure = closestTime.pressure_msl;
+	const previousPressure = previousHour.pressure_msl;
+	let pressureTrend = '';
+	if (Number.isFinite(currentPressure) && Number.isFinite(previousPressure)) {
+		const diff = currentPressure - previousPressure;
+		pressureTrend = 'Steady';
+		if (diff > 0.5) pressureTrend = 'Rising';
+		if (diff < -0.5) pressureTrend = 'Falling';
+	}
 	closestTime.pressureTrend = pressureTrend;
 	closestTime.uv_index_max = data.forecast[currentDateKey]?.uv_index_max ?? closestTime.uv_index ?? 0;
 	return closestTime;
@@ -144,6 +149,7 @@ const parseData = async (weatherParameters) => {
 			const visibilityConverter = distanceKilometers();
 			const ceilingMeters = Math.max(0, ((observation.temperature ?? 0) - (observation.dewPoint ?? 0)) * 68);
 			const pressureValue = observation.pressure ?? currentForecast.pressure_msl ?? null;
+			const resolvedWindGust = observation.windGust ?? currentForecast.wind_gusts_10m ?? 0;
 			return {
 				city: weatherParameters.city,
 				timeZone: weatherParameters.timeZone,
@@ -158,17 +164,17 @@ const parseData = async (weatherParameters) => {
 				WindSpeedRaw: observation.windSpeed,
 				WindDirection: directionToNSEW(observation.windDirection ?? 0),
 				Pressure: pressureValue === null ? '-' : pressureConverter(pressureValue * 100),
-				PressureDirection: currentForecast.pressureTrend ?? 'Steady',
+				PressureDirection: pressureValue === null ? '' : (currentForecast.pressureTrend ?? ''),
 				Humidity: Math.round(observation.relativeHumidity ?? currentForecast.relative_humidity_2m ?? 0),
-				WindGust: windConverter(observation.windGust),
-				WindGustRaw: observation.windGust,
+				WindGust: windConverter(resolvedWindGust),
+				WindGustRaw: resolvedWindGust,
 				WindUnit: windConverter.units,
 				TextConditions: Number(observation.weatherCode ?? 0),
 				Icon: getLargeIconFromWmoCodeWithWind(
 					observation.weatherCode,
 					Boolean(observation.isDay),
 					observation.windSpeed,
-					observation.windGust
+					resolvedWindGust
 				),
 			};
 		}
