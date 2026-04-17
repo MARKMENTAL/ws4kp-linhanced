@@ -73,10 +73,12 @@ Current themes include:
 * `azazel`
 * `debian`
 * `linhanced`
+* `linhanced-aero`
 * `linhanced-retro`
 * `oceanview`
 * `slackware`
 * `twc-linhanced`
+* `twc-aero`
 * `twc-classic`
 * `twc-stockholm`
 
