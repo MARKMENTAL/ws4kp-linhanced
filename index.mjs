@@ -21,6 +21,7 @@ import cache from './proxy/cache.mjs';
 import devTools from './src/com.chrome.devtools.mjs';
 import { discoverThemes } from './src/theme-discovery.mjs';
 import { findNearestWindyWebcam, loadWindyApiKey } from './src/windy-webcams.mjs';
+import { checkHazardHistoryTable } from './src/mysql.mjs';
 import { getHistory, updateHistory } from './src/hazard-history.mjs';
 
 const execAsync = promisify(exec);
@@ -203,6 +204,12 @@ const staticOptions = {
 // Weather.gov API proxy (catch-all for any Weather.gov API endpoint)
 // Skip setting up routes for the caching proxy server in static mode
 if (!process.env?.STATIC) {
+	try {
+		await checkHazardHistoryTable();
+	} catch (error) {
+		console.error(error.message);
+	}
+
 	// Server info endpoint for fastfetch output (must be before /api/ weather proxy)
 	app.get('/api/server-info', async (req, res) => {
 		try {

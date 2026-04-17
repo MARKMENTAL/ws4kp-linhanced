@@ -285,7 +285,7 @@ class Hazards extends WeatherDisplay {
 				id: hazard.id,
 				hazardType: hazard.properties?.event || 'Unknown',
 				severity: hazard.properties?.severity || 'Unknown',
-				source: hazard.properties?.senderName?.includes('NOAA') ? 'noaa' : 'derived',
+				source: String(hazard.id || '').startsWith('derived-') ? 'derived' : 'noaa',
 			}));
 
 			// Send to backend

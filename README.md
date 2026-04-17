@@ -120,6 +120,48 @@ The `Ground View` screen requires a Windy Webcams API key. Create a file named `
 
 You can obtain a free API key from [Windy Webcams API](https://api.windy.com/webcams).
 
+## MySQL
+
+`Hazard List` is now backed by MySQL in server mode. The UI only shows the latest 7 hazards, but the database retains full history.
+
+Set these environment variables before starting the app:
+
+```text
+WS4KP_MYSQL_HOST=127.0.0.1
+WS4KP_MYSQL_PORT=3306
+WS4KP_MYSQL_SOCKET_PATH=/var/run/mysql/mysql.sock
+WS4KP_MYSQL_USER=root
+WS4KP_MYSQL_PASSWORD=your-password
+WS4KP_MYSQL_DATABASE=ws4kp_linhanced
+```
+
+If your local MariaDB/MySQL instance is socket-only, set `WS4KP_MYSQL_SOCKET_PATH` and omit `WS4KP_MYSQL_HOST` / `WS4KP_MYSQL_PORT`.
+
+Create the required table:
+
+```sql
+CREATE TABLE hazard_history (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    location_label VARCHAR(255) NOT NULL,
+    location_key VARCHAR(128) NOT NULL,
+    hazard_type VARCHAR(128) NOT NULL,
+    source VARCHAR(64) NOT NULL,
+    severity VARCHAR(64) DEFAULT NULL,
+    latest_hazard_id VARCHAR(255) DEFAULT NULL,
+    encountered_at DATETIME NOT NULL,
+    last_seen_at DATETIME NOT NULL,
+    ongoing TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_logical_hazard (location_key, hazard_type, source),
+    KEY idx_last_seen_at (last_seen_at),
+    KEY idx_location_key (location_key),
+    KEY idx_ongoing (ongoing)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
 ## Running Modes
 
 This fork supports two main runtime styles.
@@ -137,6 +179,7 @@ This mode includes:
 * Express server entry point
 * proxying and caching for weather/map requests
 * Fastfetch-backed Server Observations
+* MySQL-backed Hazard List history
 * better shared performance when multiple clients use the same instance
 
 ### Static Mode
@@ -154,9 +197,9 @@ Or upload the generated `dist/` directory to your web server after running:
 npm run build
 ```
 
-The static build has been adjusted so frontend-generated paths no longer assume deployment at `/`, which makes subdirectory hosting more practical. **Also, features that require a backend server like the on-disk cache, Fastfetch-backed Server Observations, LWN Linux News, and `Ground View` will not work when running the static build by itself.**
+The static build has been adjusted so frontend-generated paths no longer assume deployment at `/`, which makes subdirectory hosting more practical. **Also, features that require a backend server like the on-disk cache, Fastfetch-backed Server Observations, LWN Linux News, `Ground View`, and `Hazard List` will not work when running the static build by itself.**
 
-The public demo at [https://mentalnet.xyz/ws4kp-linhanced-demo/](https://mentalnet.xyz/ws4kp-linhanced-demo/) is intentionally served as a static build, so the `Linux News`, `Server Observations`, and `Ground View` screens will not work there.
+The public demo at [https://mentalnet.xyz/ws4kp-linhanced-demo/](https://mentalnet.xyz/ws4kp-linhanced-demo/) is intentionally served as a static build, so the `Linux News`, `Server Observations`, `Ground View`, and `Hazard List` screens will not work there.
 
 ## International Support
 
