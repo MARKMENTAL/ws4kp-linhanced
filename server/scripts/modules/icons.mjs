@@ -55,12 +55,9 @@ const getSmallIconFromWmoCode = (code, isDaytime = true) => smallIcon(buildSynth
 const getWeatherGovTokenFromWmoCodeWithWind = (code, windSpeedKmh, windGustsKmh) => {
 	const baseToken = getWeatherGovTokenFromWmoCode(code);
 	const windDesc = getWindDescriptor(windSpeedKmh, windGustsKmh);
+	const windCapableTokens = new Set(['skc', 'few', 'sct', 'bkn', 'ovc']);
 
-	// Only use wind icon for non-precipitation conditions
-	// Precipitation codes: drizzle, rain, freezing rain, snow, sleet, thunderstorms
-	const precipitationCodes = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99];
-
-	if (windDesc && !precipitationCodes.includes(Number(code))) {
+	if (windDesc && windCapableTokens.has(baseToken)) {
 		return `wind_${baseToken}`;
 	}
 	return baseToken;
