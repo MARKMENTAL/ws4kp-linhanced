@@ -72,6 +72,21 @@ const isSameLogicalHazard = (left, right) => left.location === right.location
 	&& left.hazardType === right.hazardType
 	&& left.source === right.source;
 
+const isSameRequestedLocation = (entry, location, locationKey) => {
+	if (locationKey && entry.locationKey === locationKey) return true;
+	return entry.location === location;
+};
+
+const upgradeEntryLocationKey = (entry, location, locationKey) => {
+	if (!locationKey || entry.locationKey === locationKey) return entry;
+	return {
+		...entry,
+		location,
+		locationKey,
+		key: generateKey(locationKey, entry.hazardType, entry.source),
+	};
+};
+
 const mergeEntries = (existing, incoming) => {
 	const existingEncountered = normalizeTimestamp(existing.encounteredAt, incoming.encounteredAt);
 	const incomingEncountered = normalizeTimestamp(incoming.encounteredAt, existing.encounteredAt);
@@ -167,18 +182,19 @@ const updateHistory = async (payload) => {
 	
 	// Mark previously ongoing hazards for this location as ended if no longer active
 	history = history.map((entry) => {
-		const entryMatchKey = entry.locationKey || entry.location;
-		if (entryMatchKey !== matchKey) return entry;
+		if (!isSameRequestedLocation(entry, location, locationKey)) return entry;
+
+		const upgradedEntry = upgradeEntryLocationKey(entry, location, locationKey);
 		
 		// If this entry is ongoing but not in the current active set, mark it as ended
-		if (entry.ongoing && !activeKeys.has(entry.key)) {
+		if (upgradedEntry.ongoing && !activeKeys.has(upgradedEntry.key)) {
 			return {
-				...entry,
+				...upgradedEntry,
 				ongoing: false,
 				lastSeenAt: now,
 			};
 		}
-		return entry;
+		return upgradedEntry;
 	});
 	
 	// Add or update active hazards
