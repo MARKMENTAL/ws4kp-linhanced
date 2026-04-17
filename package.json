@@ -1,6 +1,6 @@
 {
 	"name": "ws4kp-linhanced",
-	"version": "0.1.1",
+	"version": "0.2",
 	"description": "WeatherStar 4000+: Linhanced - A Linux-focused fork of the WeatherStar 4000+ project",
 	"main": "index.mjs",
 	"type": "module",
