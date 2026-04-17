@@ -1,6 +1,8 @@
 import { rewriteUrl } from './url-rewrite.mjs';
 
 const DEFAULT_REQUEST_TIMEOUT = 15000; // For example, with 3 retries: 15s+1s+15s+2s+15s+5s+15s = 68s
+const inflightRequests = new Map();
+const responseCache = new Map();
 
 // Centralized utilities for handling errors in Promise contexts
 const safeJson = async (url, params) => {
@@ -79,8 +81,81 @@ const USER_AGENT_EXCLUDED_HOSTS = [
 	'services.arcgis.com',
 ];
 
+const classifyRequest = (_url) => {
+	const url = new URL(_url, window.location.origin);
+	if (url.hostname.includes('api.weather.gov')) {
+		if (url.pathname.includes('/alerts/active')) return 'weatherGovAlerts';
+		return 'weatherGovGeneral';
+	}
+	if (url.hostname.includes('api.open-meteo.com')) {
+		return 'openMeteo';
+	}
+	return 'default';
+};
+
+const getRequestPolicy = (requestClass, providedParams = {}) => {
+	const defaults = {
+		default: {
+			timeout: DEFAULT_REQUEST_TIMEOUT,
+			retryCount: 3,
+			cacheTtlMs: 0,
+		},
+		weatherGovAlerts: {
+			timeout: 8000,
+			retryCount: 1,
+			cacheTtlMs: 30000,
+		},
+		weatherGovGeneral: {
+			timeout: 10000,
+			retryCount: 2,
+			cacheTtlMs: 60000,
+		},
+		openMeteo: {
+			timeout: 8000,
+			retryCount: 1,
+			cacheTtlMs: 60000,
+		},
+	};
+
+	const policy = defaults[requestClass] ?? defaults.default;
+	return {
+		timeout: providedParams.timeout ?? policy.timeout,
+		retryCount: providedParams.retryCount ?? policy.retryCount,
+		cacheTtlMs: providedParams.cacheTtlMs ?? policy.cacheTtlMs,
+	};
+};
+
+const buildRequestKey = (url, responseType, params) => `${(params.method ?? 'GET').toUpperCase()}:${responseType}:${url.toString()}`;
+
+const getCachedResponse = (key) => {
+	const cached = responseCache.get(key);
+	if (!cached) return null;
+	if (Date.now() >= cached.expiresAt) {
+		responseCache.delete(key);
+		return null;
+	}
+	return cached.data;
+};
+
+const setCachedResponse = (key, data, ttlMs) => {
+	if (!ttlMs || ttlMs <= 0) return;
+	responseCache.set(key, {
+		data,
+		expiresAt: Date.now() + ttlMs,
+	});
+};
+
+const isTransientError = (error) => error?.name === 'TimeoutError'
+	|| error?.message?.includes('429')
+	|| error?.message?.includes('500')
+	|| error?.message?.includes('502')
+	|| error?.message?.includes('503')
+	|| error?.message?.includes('504');
+
 const fetchAsync = async (_url, responseType, _params = {}) => {
 	const headers = {};
+	const requestClass = classifyRequest(_url);
+	const policy = getRequestPolicy(requestClass, _params);
 
 	const checkUrl = new URL(_url, window.location.origin);
 	const shouldExcludeUserAgent = USER_AGENT_EXCLUDED_HOSTS.some((host) => checkUrl.hostname.includes(host));
@@ -98,10 +173,12 @@ const fetchAsync = async (_url, responseType, _params = {}) => {
 		method: 'GET',
 		mode: 'cors',
 		type: 'GET',
-		retryCount: 3, // Default to 3 retries for any failed requests (timeout or 5xx server errors)
-		timeout: DEFAULT_REQUEST_TIMEOUT,
+		retryCount: policy.retryCount,
+		timeout: policy.timeout,
+		cacheTtlMs: policy.cacheTtlMs,
 		..._params,
 		headers,
+		requestClass,
 	};
 
 	// rewrite URLs for various services to use the backend proxy server for proper caching (and request logging)
@@ -118,66 +195,91 @@ const fetchAsync = async (_url, responseType, _params = {}) => {
 		});
 	}
 
-	// make the request
-	try {
-		const response = await doFetch(url, params);
-
-		// check for ok response
-		if (!response.ok) throw new Error(`Fetch error ${response.status} ${response.statusText} while fetching ${response.url}`);
-		// process the response based on type
-		let result;
-		switch (responseType) {
-			case 'json':
-				result = await response.json();
-				break;
-			case 'text':
-				result = await response.text();
-				break;
-			case 'blob':
-				result = await response.blob();
-				break;
-			default:
-				result = response;
-		}
-
-		// Return both data and URL if requested
-		if (params.returnUrl) {
-			return {
-				data: result,
-				url: response.url,
-			};
-		}
-
-		return result;
-	} catch (error) {
-		// Enhanced error handling for different error types
-		if (error.name === 'AbortError') {
-			// AbortError always happens in the browser, regardless of server vs static mode
-			// Most likely causes include background tab throttling, user navigation, or client timeout
-			console.log(`🛑 Fetch aborted for ${_url} (background tab throttling?)`);
-			return null; // Always return null for AbortError instead of throwing
-		} if (error.name === 'TimeoutError') {
-			console.warn(`⏱️  Request timeout for ${_url} (${error.message})`);
-		} else if (error.message.includes('502')) {
-			console.warn(`🚪 Bad Gateway error for ${_url}`);
-		} else if (error.message.includes('503')) {
-			console.warn(`⌛ Temporarily unavailable for ${_url}`);
-		} else if (error.message.includes('504')) {
-			console.warn(`⏱️  Gateway Timeout for ${_url}`);
-		} else if (error.message.includes('500')) {
-			console.warn(`💥 Internal Server Error for ${_url}`);
-		} else if (error.message.includes('CORS') || error.message.includes('Access-Control')) {
-			console.warn(`🔒 CORS or Access Control error for ${_url}`);
-		} else {
-			console.warn(`❌ Fetch failed for ${_url} (${error.message})`);
-		}
-
-		// Add standard error properties that calling code expects
-		if (!error.status) error.status = 0;
-		if (!error.responseJSON) error.responseJSON = null;
-
-		throw error;
+	const shouldUseTransportCache = params.method.toUpperCase() === 'GET' && !params.returnUrl;
+	const requestKey = shouldUseTransportCache ? buildRequestKey(url, responseType, params) : null;
+	const cachedData = shouldUseTransportCache ? getCachedResponse(requestKey) : null;
+	if (cachedData !== null) return cachedData;
+	if (shouldUseTransportCache && inflightRequests.has(requestKey)) {
+		return inflightRequests.get(requestKey);
 	}
+
+	const executeFetch = async () => {
+		// make the request
+		try {
+			const response = await doFetch(url, params);
+
+			// check for ok response
+			if (!response.ok) throw new Error(`Fetch error ${response.status} ${response.statusText} while fetching ${response.url}`);
+			// process the response based on type
+			let result;
+			switch (responseType) {
+				case 'json':
+					result = await response.json();
+					break;
+				case 'text':
+					result = await response.text();
+					break;
+				case 'blob':
+					result = await response.blob();
+					break;
+				default:
+					result = response;
+			}
+
+			if (shouldUseTransportCache) {
+				setCachedResponse(requestKey, result, params.cacheTtlMs);
+			}
+
+			// Return both data and URL if requested
+			if (params.returnUrl) {
+				return {
+					data: result,
+					url: response.url,
+				};
+			}
+
+			return result;
+		} catch (error) {
+			if (shouldUseTransportCache && cachedData !== null && isTransientError(error)) {
+				return cachedData;
+			}
+
+			// Enhanced error handling for different error types
+			if (error.name === 'AbortError') {
+				console.log(`🛑 Fetch aborted for ${_url} (background tab throttling?)`);
+				return null;
+			} if (error.name === 'TimeoutError') {
+				console.warn(`⏱️  Request timeout for ${_url} (${error.message})`);
+			} else if (error.message.includes('429')) {
+				console.warn(`🐢 Rate limited for ${_url}`);
+			} else if (error.message.includes('502')) {
+				console.warn(`🚪 Bad Gateway error for ${_url}`);
+			} else if (error.message.includes('503')) {
+				console.warn(`⌛ Temporarily unavailable for ${_url}`);
+			} else if (error.message.includes('504')) {
+				console.warn(`⏱️  Gateway Timeout for ${_url}`);
+			} else if (error.message.includes('500')) {
+				console.warn(`💥 Internal Server Error for ${_url}`);
+			} else if (error.message.includes('CORS') || error.message.includes('Access-Control')) {
+				console.warn(`🔒 CORS or Access Control error for ${_url}`);
+			} else {
+				console.warn(`❌ Fetch failed for ${_url} (${error.message})`);
+			}
+
+			if (!error.status) error.status = 0;
+			if (!error.responseJSON) error.responseJSON = null;
+
+			throw error;
+		}
+	};
+
+	if (!shouldUseTransportCache) return executeFetch();
+
+	const inflightPromise = executeFetch().finally(() => {
+		inflightRequests.delete(requestKey);
+	});
+	inflightRequests.set(requestKey, inflightPromise);
+	return inflightPromise;
 };
 
 // fetch with retry and back-off
@@ -199,7 +301,7 @@ const doFetch = (url, params, originalRetryCount = null) => new Promise((resolve
 	};
 
 	// Shared retry logic to avoid duplication
-	const attemptRetry = (reason) => {
+	const attemptRetry = (reason, retryAfterMs = null) => {
 		// Safety check for params
 		if (!params || typeof params.retryCount !== 'number') {
 			console.error(`❌ Invalid params for retry: ${url}`);
@@ -208,7 +310,7 @@ const doFetch = (url, params, originalRetryCount = null) => new Promise((resolve
 
 		const retryAttempt = initialRetryCount - params.retryCount + 1;
 		const remainingRetries = params.retryCount - 1;
-		const delayMs = retryDelay(retryAttempt);
+		const delayMs = retryDelay(retryAttempt, params.requestClass, retryAfterMs);
 
 		console.warn(`🔄 Retry ${retryAttempt}/${initialRetryCount} for ${url} - ${reason} (retrying in ${delayMs}ms, ${remainingRetries} retr${remainingRetries === 1 ? 'y' : 'ies'} left)`);
 
@@ -234,6 +336,13 @@ const doFetch = (url, params, originalRetryCount = null) => new Promise((resolve
 
 	fetch(url, fetchParams).then((response) => {
 		clearTimeout(timeoutId); // Clear timeout on successful response
+
+		if (params && params.retryCount > 0 && response.status === 429) {
+			const retryAfterHeader = response.headers.get('Retry-After');
+			const retryAfterSeconds = Number.parseInt(retryAfterHeader, 10);
+			const retryAfterMs = Number.isFinite(retryAfterSeconds) ? retryAfterSeconds * 1000 : null;
+			return attemptRetry(`Rate limited 429 ${response.statusText}`, retryAfterMs);
+		}
 
 		// Retry 500 status codes if we have retries left
 		if (params && params.retryCount > 0 && response.status >= 500 && response.status <= 599) {
@@ -289,13 +398,21 @@ const doFetch = (url, params, originalRetryCount = null) => new Promise((resolve
 	});
 });
 
-const retryDelay = (retryNumber) => {
+const retryDelay = (retryNumber, requestClass = 'default', retryAfterMs = null) => {
+	if (retryAfterMs !== null) {
+		return retryAfterMs + Math.floor(Math.random() * 400);
+	}
+
+	if (requestClass === 'openMeteo') {
+		return 5000 + Math.floor(Math.random() * 400);
+	}
+
 	switch (retryNumber) {
-		case 1: return 1000;
-		case 2: return 2000;
-		case 3: return 5000;
-		case 4: return 10_000;
-		default: return 30_000;
+		case 1: return 1000 + Math.floor(Math.random() * 400);
+		case 2: return 2000 + Math.floor(Math.random() * 400);
+		case 3: return 5000 + Math.floor(Math.random() * 600);
+		case 4: return 10_000 + Math.floor(Math.random() * 1000);
+		default: return 30_000 + Math.floor(Math.random() * 1000);
 	}
 };
 
