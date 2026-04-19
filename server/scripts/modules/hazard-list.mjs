@@ -8,11 +8,17 @@ class HazardList extends WeatherDisplay {
 	constructor(navId, elemId) {
 		super(navId, elemId, 'Hazard List', true);
 		this.history = [];
+		this.handleHazardHistoryUpdated = this.handleHazardHistoryUpdated.bind(this);
+		window.addEventListener('hazard-history-updated', this.handleHazardHistoryUpdated);
 	}
 
 	async getData(weatherParameters, refresh) {
 		const superResult = super.getData(weatherParameters, refresh);
+		await this.refreshHistoryNow();
+		return superResult;
+	}
 
+	async refreshHistoryNow() {
 		try {
 			// Fetch hazard history from backend
 			const response = await fetch(withBasePath('api/hazard-history'));
@@ -37,8 +43,13 @@ class HazardList extends WeatherDisplay {
 				this.setStatus(STATUS.failed);
 			}
 		}
+	}
 
-		return superResult;
+	async handleHazardHistoryUpdated() {
+		await this.refreshHistoryNow();
+		if (this.active) {
+			this.drawCanvas();
+		}
 	}
 
 	async drawCanvas() {

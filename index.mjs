@@ -23,6 +23,7 @@ import { discoverThemes } from './src/theme-discovery.mjs';
 import { findNearestWindyWebcam, loadWindyApiKey } from './src/windy-webcams.mjs';
 import { checkHazardHistoryTable } from './src/mysql.mjs';
 import { getHistory, updateHistory } from './src/hazard-history.mjs';
+import { startHazardHistoryWorker, stopHazardHistoryWorker } from './src/hazard-history-worker.mjs';
 
 const execAsync = promisify(exec);
 
@@ -204,10 +205,16 @@ const staticOptions = {
 // Weather.gov API proxy (catch-all for any Weather.gov API endpoint)
 // Skip setting up routes for the caching proxy server in static mode
 if (!process.env?.STATIC) {
+	let hazardHistoryReady = false;
 	try {
 		await checkHazardHistoryTable();
+		hazardHistoryReady = true;
 	} catch (error) {
 		console.error(error.message);
+	}
+
+	if (hazardHistoryReady) {
+		startHazardHistoryWorker();
 	}
 
 	// Server info endpoint for fastfetch output (must be before /api/ weather proxy)
@@ -408,6 +415,7 @@ const server = app.listen(port, () => {
 
 // graceful shutdown
 const gracefulShutdown = () => {
+	stopHazardHistoryWorker();
 	server.close(() => {
 		console.log('Server closed');
 		process.exit(0);

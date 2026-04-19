@@ -133,6 +133,54 @@ const getHistory = async () => {
 	return rows.map(mapRowToHistoryEntry);
 };
 
+const getOngoingHazards = async () => {
+	const [rows] = await getPool().query(
+		`SELECT
+			id,
+			location_label,
+			location_key,
+			hazard_type,
+			source,
+			severity,
+			latest_hazard_id
+		FROM hazard_history
+		WHERE ongoing = 1
+		ORDER BY last_seen_at DESC`,
+	);
+
+	return rows.map((row) => ({
+		id: row.id,
+		locationLabel: row.location_label,
+		locationKey: row.location_key,
+		hazardType: row.hazard_type,
+		source: row.source,
+		severity: row.severity,
+		latestHazardId: row.latest_hazard_id,
+	}));
+};
+
+const touchHazardStillOngoing = async ({ id, severity = null, latestHazardId = null }) => {
+	await getPool().execute(
+		`UPDATE hazard_history
+		SET severity = COALESCE(?, severity),
+		    latest_hazard_id = COALESCE(?, latest_hazard_id),
+		    last_seen_at = UTC_TIMESTAMP(),
+		    ongoing = 1
+		WHERE id = ?`,
+		[severity, latestHazardId, id],
+	);
+};
+
+const markHazardEndedById = async (id) => {
+	await getPool().execute(
+		`UPDATE hazard_history
+		SET ongoing = 0,
+		    last_seen_at = UTC_TIMESTAMP()
+		WHERE id = ?`,
+		[id],
+	);
+};
+
 const updateHistory = async (payload) => {
 	const { location, locationKey, hazards = [] } = payload;
 	const validHazards = hazards.filter((hazard) => hazard?.hazardType && hazard?.source);
@@ -242,6 +290,9 @@ const updateHistory = async (payload) => {
 export {
 	formatLocation,
 	getHistory,
+	getOngoingHazards,
 	MAX_HISTORY_ENTRIES,
+	markHazardEndedById,
+	touchHazardStillOngoing,
 	updateHistory,
 };

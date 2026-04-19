@@ -2,6 +2,8 @@
 
 `ws4kp-linhanced` is a Linux-focused fork of [`netbymatt/ws4kp`](https://github.com/netbymatt/ws4kp) by `markmental`.
 
+Current release: `v0.2.1`
+
 It keeps the stronger, more stable foundation of the original `ws4kp` project while selectively incorporating international weather support and global map ideas from [`mwood77/ws4kp-international`](https://github.com/mwood77/ws4kp-international). The goal is not to become a kitchen-sink weather platform. The goal is a leaner, maintainable, Linux-oriented WeatherStar fork with a clear identity.
 
 This fork also explicitly embraces Slackware Linux / `weatherstar4k` branding as part of its mission. Broad platform neutrality is not a design goal here.
@@ -47,6 +49,7 @@ Major features currently in this fork:
 * global RainViewer radar on a cached world basemap
 * global `Regional Observations` and nearby-city displays backed by expanded worldwide city coverage
 * `Latest Observations` screen for nearby city temperatures, conditions, and wind
+* `Hazard List` screen with MySQL-backed server history for encountered NOAA and derived hazards
 * `Ground View` screen powered by nearby Windy webcams (requires API key, see below)
 * Travel Forecast rebuilt around region buckets with a global fallback
 * optional screen-specific audio playback for supported displays
@@ -164,6 +167,10 @@ CREATE TABLE hazard_history (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+The database retains full hazard history. The `Hazard List` UI shows only the latest 7 entries and only the most recent row per stored location. Nearby same-label locations are reconciled during updates to reduce duplicate location spam.
+
+In the current browser session, `Hazard List` updates immediately after new hazard history is synced.
+
 ## Running Modes
 
 This fork supports two main runtime styles.
@@ -182,6 +189,7 @@ This mode includes:
 * proxying and caching for weather/map requests
 * Fastfetch-backed Server Observations
 * MySQL-backed Hazard List history
+* automatic ongoing-hazard rechecks every 10 minutes for both NOAA and derived hazards
 * better shared performance when multiple clients use the same instance
 
 ### Static Mode

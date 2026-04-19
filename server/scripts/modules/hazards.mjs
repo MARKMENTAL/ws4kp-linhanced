@@ -290,13 +290,19 @@ class Hazards extends WeatherDisplay {
 			}));
 
 			// Send to backend
-			await fetch(withBasePath('api/hazard-history'), {
+			const response = await fetch(withBasePath('api/hazard-history'), {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({ location, locationKey, hazards }),
 			});
+
+			if (!response.ok) {
+				throw new Error(`Hazard history sync failed with status ${response.status}`);
+			}
+
+			window.dispatchEvent(new CustomEvent('hazard-history-updated'));
 		} catch (error) {
 			// Silently fail - hazard history is non-critical
 			if (debugFlag('verbose-failures')) {
