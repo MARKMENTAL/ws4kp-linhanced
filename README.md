@@ -209,7 +209,7 @@ npm run build
 
 The static build has been adjusted so frontend-generated paths no longer assume deployment at `/`, which makes subdirectory hosting more practical. **Also, features that require a backend server like the on-disk cache, Fastfetch-backed Server Observations, LWN Linux News, `Ground View`, and `Hazard List` will not work when running the static build by itself.**
 
-The public demo at [https://mentalnet.xyz/ws4kp-linhanced-demo/](https://mentalnet.xyz/ws4kp-linhanced-demo/) is intentionally served as a static build, so the `Linux News`, `Server Observations`, `Ground View`, and `Hazard List` screens will not work there.
+The public hosted instance at [https://mentalnet.xyz/ws4kp-linhanced-demo/](https://mentalnet.xyz/ws4kp-linhanced-demo/) now runs the full server-backed version, so backend-dependent screens like `Linux News`, `Server Observations`, `Ground View`, and `Hazard List` are expected to work there.
 
 ## International Support
 
